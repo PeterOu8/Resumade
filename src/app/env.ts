@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 export const env = z
   .object({
     OPENAI_API_KEY: z.string().min(10),

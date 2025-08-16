@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { FileUser } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import SupportMeButton from './SupportMeButton';
 
 export default function Header() {
   return (
@@ -14,7 +15,10 @@ export default function Header() {
             Resumade
           </Link>
         </div>
-        <ThemeToggle />
+        <div className="flex flex-row gap-3 items-center">
+          <SupportMeButton />
+          <ThemeToggle />
+        </div>
       </nav>
     </header>
   );

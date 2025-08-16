@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const fileSizeLimit = 10 * 1024 * 1024; // 10MB
-const DOCUMENT_SCHEMA = z //Only takes pdf and docx files
+export const RESUME_SCHEMA = z //Only takes pdf and docx files
   .instanceof(File)
   .refine(
     (file) =>
@@ -16,7 +16,7 @@ const DOCUMENT_SCHEMA = z //Only takes pdf and docx files
   });
 
 export const ResumeFormSchema = z.object({
-  description: z.string().min(10),
-  prompt: z.string().min(10),
-  resume: DOCUMENT_SCHEMA,
+  resumePlainText: z.string().min(10),
+  jobDescription: z.string().min(10),
+  prompt: z.string(),
 });
