@@ -5,13 +5,39 @@ import {
   DropzoneEmptyState,
 } from '@/components/ui/shadcn-io/dropzone';
 import { UploadIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface DropZoneProps {
   file: File[] | undefined;
-  setResumeText: (files: File[]) => void;
+  setResume: (files: File[]) => void;
+  onChange: (text: string) => void;
 }
 
-export default function ResumeDropZone({ file, setResumeText }: DropZoneProps) {
+export default function ResumeDropZone({
+  file,
+  setResume,
+  onChange,
+}: DropZoneProps) {
+  function fileTypeValidator(file: File) {
+    if (!file) {
+      return {
+        code: 'No file provided',
+        message: 'Please upload at least one file.',
+      };
+    }
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+    if (!allowedTypes.includes(file.type)) {
+      return {
+        code: 'Invalid file type',
+        message: `File type must be one of.pdf or .docx`,
+      };
+    }
+    return null;
+  }
+
   const handleDrop = async (file: File[]) => {
     try {
       const resume = file[0];
@@ -24,13 +50,14 @@ export default function ResumeDropZone({ file, setResumeText }: DropZoneProps) {
       });
       const data = await res.json();
       if (!res.ok) {
+        toast.error(data.error);
         throw new Error(data.error);
       }
-      console.log(data);
+      onChange(data.text);
     } catch (e: any) {
-      console.log(e.message);
+      toast.error(e.message);
     }
-    setResumeText(file);
+    setResume(file);
   };
   return (
     <Dropzone
@@ -44,8 +71,9 @@ export default function ResumeDropZone({ file, setResumeText }: DropZoneProps) {
       maxSize={1024 * 1024 * 10}
       minSize={1024}
       onDrop={handleDrop}
-      onError={console.error}
+      onError={(error) => toast.error(error.message)}
       src={file}
+      validator={fileTypeValidator}
     >
       <DropzoneEmptyState>
         <div className="flex flex-col w-full items-center gap-4 p-4">

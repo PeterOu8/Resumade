@@ -1,164 +1,145 @@
-// 'use client';
+'use client';
 
-// import { useForm, SubmitHandler } from 'react-hook-form';
-// import { zodResolver } from '@hookform/resolvers/zod';
-// import { z } from 'zod';
-// import { ResumeFormSchema } from '@/lib/schemas';
+import { useForm, SubmitHandler } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 
-// import { toast } from 'sonner';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from './ui/form';
+import { Textarea } from './ui/textarea';
+import { Button } from './ui/button';
+import { ResumeFormSchema, TailorResumeRequestSchema } from '@/lib/schemas';
+import ResumeDropZone from './ResumeDropZone';
 
-// import { useWatch } from 'react-hook-form';
-// import { TailorResume } from '@/app/api/tailorResume';
+type ResumeFormInput = z.infer<typeof TailorResumeRequestSchema>;
 
-// type ShareFormInput = z.infer<typeof ResumeFormSchema>;
+interface TailorResumeFormProps {
+  file: File[] | undefined;
+  setResume: (files: File[]) => void;
+}
 
-// export const TailorResumeForm = () => {
+export default function TailorResumeForm({
+  file,
+  setResume,
+}: TailorResumeFormProps) {
+  const form = useForm<ResumeFormInput>({
+    resolver: zodResolver(TailorResumeRequestSchema),
+    defaultValues: {
+      resumePlainText: '',
+      jobDescription: '',
+      prompt: '',
+    },
+  });
 
-//   const form = useForm<ShareFormInput>({
-//     resolver: zodResolver(ResumeFormSchema),
-//     defaultValues: {
-//         resume: File[],
-//       jobDescription: '',
-//       prompt: '',
-//     },
-//   });
+  const {
+    handleSubmit,
+    control,
+    reset,
+    formState: { isSubmitting },
+  } = form;
 
-//   const {
-//     handleSubmit,
-//     control,
-//     reset,
-//     formState: { isSubmitting },
-//   } = form;
+  const processForm: SubmitHandler<ResumeFormInput> = async (data) => {
+    const { resumePlainText, jobDescription, prompt } = data;
 
-//   const processForm: SubmitHandler<ShareFormInput> = async (data) => {
-//     const result = ResumeFormSchema.safeParse(data);
-//     if (!result.success) return;
+    toast.promise(
+      fetch('/api/tailor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumePlainText,
+          jobDescription,
+          prompt,
+        }),
+      }),
+      {
+        loading: 'Generating tailored resume…',
+        success: 'Tailored resume ready for download!',
+        error: 'An unexpected error occurred.',
+        finally: () => {
+          reset();
+        },
+      }
+    );
+  };
 
-//     const { resume, jobDescription, prompt } = result.data;
-
-//     toast.promise(
-//       TailorResume()),
-//       {
-//         loading: 'Processing resource...please check status later',
-//         success: 'Resource processing completed!',
-//         error: (err) => {
-//           if (err.message === 'failed') return 'Resource processing failed.';
-//           if (err.message === 'timeout')
-//             return 'Resource processing timed out.';
-//           if (err.name === 'AbortError')
-//             return 'Request timed out after 5 seconds.';
-//           return 'An unexpected error occurred.';
-//         },
-//         finally: () => {
-//           reset();
-//         },
-//       }
-//     );
-//   };
-
-//   return (
-//     <Form {...form}>
-//       <div className="container px-4 py-8 mx-auto max-w-2xl">
-//         <Card className="animate-in fade-in-50 slide-in-from-bottom-8 duration-300 rounded-2xl shadow-lg bg-background">
-//           <CardHeader>
-//             <CardTitle className="text-2xl text-foreground">
-//               Share a Resource
-//             </CardTitle>
-//             <CardDescription>
-//               Share a valuable developer resource. Our AI will analyze it and
-//               add relevant details.
-//             </CardDescription>
-//             <hr className="my-4 border-muted" />
-//           </CardHeader>
-//           <form onSubmit={handleSubmit(processForm)}>
-//             <CardContent className="space-y-6">
-//               {/* URL Field */}
-//               <FormField
-//                 control={control}
-//                 name="url"
-//                 render={({ field }) => (
-//                   <FormItem className="space-y-2">
-//                     <Label htmlFor="url" className="text-foreground">
-//                       Resource URL <span className="text-destructive">*</span>
-//                     </Label>
-//                     <div className="relative">
-//                       <LinkIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-//                       <FormControl>
-//                         <Input
-//                           id="url"
-//                           type="text"
-//                           placeholder="https://example.com/resource"
-//                           {...field}
-//                           className="pl-10 focus:ring-2 focus:ring-primary/30 hover:border-primary transition-all duration-200"
-//                         />
-//                       </FormControl>
-//                     </div>
-//                     <FormMessage />
-//                   </FormItem>
-//                 )}
-//               />
-
-//               {/* Comment Field */}
-//               <FormField
-//                 control={control}
-//                 name="comment"
-//                 render={({ field }) => (
-//                   <FormItem className="space-y-2">
-//                     <Label
-//                       htmlFor="comment"
-//                       className="flex items-center gap-2 text-foreground"
-//                     >
-//                       <MessageSquare className="h-4 w-4 text-muted-foreground" />
-//                       Your Comment
-//                     </Label>
-//                     <FormControl>
-//                       <Textarea
-//                         id="comment"
-//                         placeholder="Share your thoughts, experience, or recommendation about this resource (e.g. I read this docs and I learn a lot... very recommend for beginner to React!)"
-//                         rows={3}
-//                         {...field}
-//                         className="focus:ring-2 focus:ring-primary/30 hover:border-primary transition-all duration-200"
-//                       />
-//                     </FormControl>
-//                     <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-//                       <span>
-//                         Let others know why you recommend this resource.
-//                       </span>
-//                       <span>{commentValue?.length || 0}/200</span>
-//                     </div>
-//                     <FormMessage />
-//                   </FormItem>
-//                 )}
-//               />
-//             </CardContent>
-
-//             <CardFooter className="flex flex-col sm:flex-row sm:justify-between gap-2 mt-2">
-//               <Button
-//                 type="button"
-//                 variant="outline"
-//                 onClick={() => router.push('/')}
-//                 className="w-full sm:w-auto"
-//               >
-//                 Cancel
-//               </Button>
-//               <Button
-//                 type="submit"
-//                 disabled={isSubmitting}
-//                 className="w-full sm:w-auto border bg-background text-foreground font-semibold px-6 py-2 rounded-lg flex items-center justify-center gap-2 shadow-md hover:bg-primary/90 transition-all duration-200"
-//               >
-//                 {isSubmitting ? (
-//                   <>
-//                     <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
-//                     Submitting...
-//                   </>
-//                 ) : (
-//                   <>Share Resource</>
-//                 )}
-//               </Button>
-//             </CardFooter>
-//           </form>
-//         </Card>
-//       </div>
-//     </Form>
-//   );
-// };
+  return (
+    <Form {...form}>
+      <form onSubmit={handleSubmit(processForm)} className="w-2/3 space-y-6">
+        <FormField
+          control={control}
+          name="resumePlainText"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Resume</FormLabel>
+              <FormControl>
+                <ResumeDropZone
+                  file={file}
+                  setResume={setResume}
+                  onChange={(text) => field.onChange(text)}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="jobDescription"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Job Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Tell us a little bit about the job description"
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>Past your job description here.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="prompt"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prompt for AI</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Tell us a little bit about prompt"
+                  className="resize-none"
+                  {...field}
+                />
+              </FormControl>
+              <FormDescription>
+                You can add in additional prompt to make your tailored result
+                precise and on point!
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit">
+          {isSubmitting ? (
+            <>
+              <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            <>Share Resource</>
+          )}
+        </Button>
+      </form>
+    </Form>
+  );
+}

@@ -1,5 +1,6 @@
 'use client';
-import ResumeDropZone from '@/components/ResumeDropZone';
+
+import TailorResumeForm from '@/components/TailorResumeForm';
 import { useState } from 'react';
 
 export default function Home() {
@@ -8,7 +9,7 @@ export default function Home() {
   return (
     <main>
       <h1>Resumade</h1>
-      <ResumeDropZone file={resume} setResumeText={setResume} />
+      <TailorResumeForm file={resume} setResume={setResume}></TailorResumeForm>
     </main>
   );
 }

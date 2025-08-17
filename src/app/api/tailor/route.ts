@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { env } from '../../env';
 import { redactText } from '@/lib/textHelpers';
@@ -6,7 +5,7 @@ import { TailorResumeRequestSchema } from '@/lib/schemas';
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-export async function tailorResume(req: NextRequest) {
+export async function POST(req: Request) {
   const { resumePlainText, jobDescription, prompt } =
     TailorResumeRequestSchema.parse(await req.json());
 
@@ -39,11 +38,8 @@ summary:string; keySkills:string[]; experience:[{company,title,dates?,bullets:st
   const raw = resp.choices[0].message.content || '{}';
   try {
     const json = JSON.parse(raw);
-    return NextResponse.json(json);
+    return Response.json(json);
   } catch {
-    return NextResponse.json(
-      { error: 'Invalid JSON from model' },
-      { status: 500 }
-    );
+    return Response.json({ error: 'Invalid JSON from model' }, { status: 500 });
   }
 }
