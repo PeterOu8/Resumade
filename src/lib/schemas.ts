@@ -15,8 +15,14 @@ export const RESUME_SCHEMA = z //Only takes pdf and docx files
     message: 'File size should not exceed 10MB',
   });
 
-export const ResumeFormSchema = z.object({
+export const TailorResumeRequestSchema = z.object({
   resumePlainText: z.string().min(10),
+  jobDescription: z.string().min(10),
+  prompt: z.string(),
+});
+
+export const ResumeFormSchema = z.object({
+  resume: RESUME_SCHEMA,
   jobDescription: z.string().min(10),
   prompt: z.string(),
 });

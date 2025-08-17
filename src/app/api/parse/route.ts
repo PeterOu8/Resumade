@@ -1,15 +1,14 @@
 export const dynamic = 'force-dynamic'; // avoid caching uploads
 
-import { NextRequest, NextResponse } from 'next/server';
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
-import { cleanResumeText, estimateTokens, redactText } from '@/lib/textHelpers';
+import { cleanResumeText, estimateTokens } from '@/lib/textHelpers';
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   const formData = await req.formData();
   const file = formData.get('file') as unknown as File | null;
   if (!file) {
-    return NextResponse.json({ error: 'No uploaded file' }, { status: 400 });
+    return Response.json({ error: 'No uploaded file' }, { status: 400 });
   }
 
   const type = file.type || '';
@@ -18,7 +17,7 @@ export async function POST(req: NextRequest) {
       type
     )
   )
-    return NextResponse.json({ error: 'Only PDF or DOCX' }, { status: 400 });
+    return Response.json({ error: 'Only PDF or DOCX' }, { status: 400 });
 
   const buf = Buffer.from(await file.arrayBuffer());
 
@@ -32,12 +31,12 @@ export async function POST(req: NextRequest) {
       text = value;
     }
   } catch (e) {
-    return NextResponse.json({ error: 'Parse failed' }, { status: 500 });
+    return Response.json({ error: 'Parse failed' }, { status: 500 });
   }
 
   text = cleanResumeText(text);
 
-  return NextResponse.json({
+  return Response.json({
     text,
     length: text.length,
     estimateTokens: estimateTokens(text),

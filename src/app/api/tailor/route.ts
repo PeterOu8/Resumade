@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { env } from '../env';
+import { env } from '../../env';
 import { redactText } from '@/lib/textHelpers';
-import { ResumeFormSchema } from '@/lib/schemas';
+import { TailorResumeRequestSchema } from '@/lib/schemas';
 
 const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
-export async function POST(req: NextRequest) {
-  const { resumePlainText, jobDescription, prompt } = ResumeFormSchema.parse(
-    await req.json()
-  );
+export async function tailorResume(req: NextRequest) {
+  const { resumePlainText, jobDescription, prompt } =
+    TailorResumeRequestSchema.parse(await req.json());
 
   const system = `You are the head of human resource management with over 10 years of experience in hiring technical professionals. Rewrite resumes for ATS using AU spelling. Keep claims truthful and highlight skills listed in the job description with experience.
 Output JSON ONLY with keys:
