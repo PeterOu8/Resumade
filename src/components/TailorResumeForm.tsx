@@ -16,7 +16,7 @@ import {
 } from './ui/form';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { ResumeFormSchema, TailorResumeRequestSchema } from '@/lib/schemas';
+import { TailorResumeRequestSchema } from '@/lib/schemas';
 import ResumeDropZone from './ResumeDropZone';
 
 type ResumeFormInput = z.infer<typeof TailorResumeRequestSchema>;
@@ -43,36 +43,38 @@ export default function TailorResumeForm({
     handleSubmit,
     control,
     reset,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isSubmitSuccessful },
   } = form;
 
   const processForm: SubmitHandler<ResumeFormInput> = async (data) => {
     const { resumePlainText, jobDescription, prompt } = data;
 
-    toast.promise(
-      fetch('/api/tailor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resumePlainText,
-          jobDescription,
-          prompt,
-        }),
-      }),
-      {
-        loading: 'Generating tailored resume…',
-        success: 'Tailored resume ready for download!',
-        error: 'An unexpected error occurred.',
-        finally: () => {
+    const request = fetch('/api/tailor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resumePlainText, jobDescription, prompt }),
+    });
+
+    toast.promise(request, {
+      loading: 'Generating tailored resume…',
+      success: 'Tailored resume ready for download!',
+      error: 'An unexpected error occurred.',
+      finally: () => {
+        if (isSubmitSuccessful) {
+          setResume([]);
           reset();
-        },
-      }
-    );
+        }
+      },
+    });
+    const response = await request;
+    if (!response.ok) {
+      throw new Error('Tailor resume failed');
+    }
   };
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(processForm)} className="w-2/3 space-y-6">
+      <form onSubmit={handleSubmit(processForm)} className="space-y-6 pt-8">
         <FormField
           control={control}
           name="resumePlainText"
@@ -129,14 +131,14 @@ export default function TailorResumeForm({
             </FormItem>
           )}
         />
-        <Button type="submit">
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <div className="h-4 w-4 mr-2 rounded-full border-2 border-current border-t-transparent animate-spin" />
               Submitting...
             </>
           ) : (
-            <>Share Resource</>
+            <>Submit</>
           )}
         </Button>
       </form>
