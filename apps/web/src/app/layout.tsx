@@ -1,0 +1,34 @@
+import type { Metadata } from 'next';
+import './globals.css';
+import { ThemeProvider } from '@/components/theme-provider';
+import Header from '@/components/Header';
+import { Toaster } from 'sonner';
+
+export const metadata: Metadata = {
+  title: 'Resumade',
+  description: 'Tailor your resume with AI',
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head />
+      <body>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <Header />
+          <main>{children}</main>
+        </ThemeProvider>
+        <Toaster />
+      </body>
+    </html>
+  );
+}
