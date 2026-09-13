@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Resumade.Api/Resumade.Api.csproj" Id="52e4d244-bed1-4b29-a416-edbd2c4b3984" />
+  <Project Path="Resumade.Application/Resumade.Application.csproj" Id="e38c1b57-fec7-410c-99da-ebf4b9b8859f" />
+  <Project Path="Resumade.Domain/Resumade.Domain.csproj" Id="93f20033-25c4-45d3-8887-55be2daec998" />
+  <Project Path="Resumade.Infrastructure/Resumade.Infrastructure.csproj" Id="8ebb38e9-2a5a-4021-9e3c-a44a029439cb" />
+  <Project Path="../../tests/Resumade.UnitTests/Resumade.UnitTests.csproj" />
+  <Project Path="../../tests/Resumade.IntegrationTests/Resumade.IntegrationTests.csproj" />
+</Solution>

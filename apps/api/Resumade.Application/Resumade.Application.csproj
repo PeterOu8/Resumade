@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Resumade.Domain\Resumade.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Applications\" />
+    <Folder Include="Identity\" />
+    <Folder Include="Jobs\" />
+    <Folder Include="Matching\" />
+    <Folder Include="Interviews\" />
+    <Folder Include="AI\" />
+    <Folder Include="Resumes\" />
+  </ItemGroup>
+
+</Project>
