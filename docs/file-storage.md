@@ -1,6 +1,6 @@
 # Resume document storage
 
-Resume uploads are stored through the Application-layer `IFileStorage` abstraction. The current Infrastructure implementation, `LocalFileStorage`, writes to a configurable root outside the repository by default (`%LOCALAPPDATA%/Resumade/uploads` on Windows or the platform equivalent).
+Resume uploads are stored through `Services/Interfaces/IFileStorage` in the single API project. The `Infrastructure/FileStorage/LocalFileStorage` implementation writes to a configurable root outside the repository by default (`%LOCALAPPDATA%/Resumade/uploads` on Windows or the platform equivalent).
 
 Configure a different root with:
 

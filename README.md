@@ -1,6 +1,19 @@
 # Resumade
 
-AI-assisted career preparation SaaS. The backend is a layered modular monolith built with ASP.NET Core, EF Core and PostgreSQL; the existing Next.js app remains the frontend foundation.
+AI-assisted career preparation SaaS. The backend is one controller-based ASP.NET Core 10 project with EF Core and PostgreSQL; the existing Next.js app remains the frontend foundation.
+
+The backend lives in `src/Resumade.Api`, with controllers, services, models, and infrastructure in separate folders. All backend tests live in `tests/Resumade.Api.Tests`. See the [backend consolidation report](docs/backend-consolidation.md) for the layout and preserved routes.
+
+From the repository root:
+
+```powershell
+dotnet restore Resumade.slnx
+dotnet build Resumade.slnx --no-restore
+dotnet test Resumade.slnx --no-build
+dotnet run --project src/Resumade.Api
+```
+
+Configure development secrets using the authentication instructions below before running the API. The existing HTTP and HTTPS launch profiles retain ports 5011 and 7131.
 
 See [authentication setup](docs/authentication.md) for Step 4 local configuration.
 
