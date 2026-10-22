@@ -27,4 +27,8 @@
     <EmbeddedResource Remove="Services/AI/**;Services/Applications/**;Services/Jobs/**;Services/Matching/**;Infrastructure/AI/**;Infrastructure/BackgroundJobs/**" />
     <None Remove="Services/AI/**;Services/Applications/**;Services/Jobs/**;Services/Matching/**;Infrastructure/AI/**;Infrastructure/BackgroundJobs/**" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Infrastructure\" />
+    <Folder Include="Services\" />
+  </ItemGroup>
 </Project>
