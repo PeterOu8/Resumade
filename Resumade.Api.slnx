@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="src/Resumade.Api/Resumade.Api.csproj" />
+  <Project Path="api/Resumade.Api.csproj" />
   <Project Path="tests/Resumade.Api.Tests/Resumade.Api.Tests.csproj" />
 </Solution>

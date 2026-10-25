@@ -1,0 +1,16 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Resumade.Api.Models.Dtos
+{
+    public class CreateResumeDto
+    {
+        [Required(ErrorMessage = "Title is required")]
+        [MaxLength(200, ErrorMessage = "Title cannot be longer than 200 characters")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "ContentJson is required")]
+        [MaxLength(200000)]
+        [JsonObject]
+        public string ContentJson { get; set; } = "{}";
+    }
+}

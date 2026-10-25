@@ -12,14 +12,8 @@
 
         public string ContentJson { get; set; } = "{}";
 
-        public string Style { get; set; } = "modern";
-
-        public string ThemeColor { get; set; } = "#2563eb";
-
-
-        public bool IsPrimary { get; set; }
-
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     }
 }
