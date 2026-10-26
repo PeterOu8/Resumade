@@ -4,6 +4,6 @@
     {
         public Guid ResumeId { get; set; }
 
-        public string ContentJson { get; set; } = "{}";
+        public ResumeContentDto Content { get; set; } = null!;
     }
 }

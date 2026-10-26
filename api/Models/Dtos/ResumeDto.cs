@@ -1,11 +1,14 @@
-﻿namespace Resumade.Api.Models.Dtos
+﻿namespace Resumade.Api.Models.Dtos;
+
+public class ResumeDto
 {
-    public class ResumeDto
-    {
-        public Guid Id { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string ContentJson { get; set; } = "{}";
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-    }
+    public Guid Id { get; set; }
+
+    public string Title { get; set; } = string.Empty;
+
+    public ResumeContentDto Content { get; set; } = new();
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime UpdatedAt { get; set; }
 }

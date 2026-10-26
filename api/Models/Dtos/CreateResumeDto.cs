@@ -8,9 +8,7 @@ namespace Resumade.Api.Models.Dtos
         [MaxLength(200, ErrorMessage = "Title cannot be longer than 200 characters")]
         public string Title { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "ContentJson is required")]
-        [MaxLength(200000)]
-        [JsonObject]
-        public string ContentJson { get; set; } = "{}";
+        [Required(ErrorMessage = "Content is required")]
+        public ResumeContentDto Content { get; set; } = null!;
     }
 }

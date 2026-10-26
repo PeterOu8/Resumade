@@ -2,6 +2,7 @@
 using Resumade.Api.Data;
 using Resumade.Api.Models;
 using Resumade.Api.Models.Dtos;
+using System.Text.Json;
 
 namespace Resumade.Api.Services
 {
@@ -14,20 +15,34 @@ namespace Resumade.Api.Services
             _context = context;
         }
 
+        private static readonly JsonSerializerOptions JsonOptions =
+            new(JsonSerializerDefaults.Web);
+
+        private static ResumeDto ToDto(Resume resume)
+        {
+            var content = JsonSerializer.Deserialize<ResumeContentDto>(
+                resume.ContentJson, JsonOptions);
+
+            return new ResumeDto
+            {
+                Id = resume.Id,
+                Title = resume.Title,
+                Content = content
+                    ?? throw new JsonException("Stored resume content cannot be null."),
+                CreatedAt = resume.CreatedAt,
+                UpdatedAt = resume.UpdatedAt
+            };
+        }
+
         public async Task<List<ResumeDto>> GetUserResumesAsync(Guid userId)
         {
-            return await _context.Resumes
+            var resumes = await _context.Resumes
+                .AsNoTracking()
                 .Where(r => r.UserId == userId)
                 .OrderByDescending(r => r.UpdatedAt)
-                .Select(r => new ResumeDto
-                {
-                    Id = r.Id,
-                    Title = r.Title,
-                    ContentJson = r.ContentJson,
-                    CreatedAt = r.CreatedAt,
-                    UpdatedAt = r.UpdatedAt
-                })
                 .ToListAsync();
+
+            return resumes.Select(ToDto).ToList();
         }
 
         public async Task<ResumeDto?> GetResumeByIdAsync(Guid id, Guid userId)
@@ -37,14 +52,7 @@ namespace Resumade.Api.Services
 
             if (resume == null) return null;
 
-            return new ResumeDto
-            {
-                Id = resume.Id,
-                Title = resume.Title,
-                ContentJson = resume.ContentJson,
-                CreatedAt = resume.CreatedAt,
-                UpdatedAt = resume.UpdatedAt
-            };
+            return ToDto(resume);
         }
 
         public async Task<ResumeDto> CreateResumeAsync(CreateResumeDto dto, Guid userId)
@@ -52,21 +60,14 @@ namespace Resumade.Api.Services
             var resume = new Resume
             {
                 UserId = userId,
-                Title = dto.Title,
-                ContentJson = dto.ContentJson
+                Title = dto.Title.Trim(),
+                ContentJson = JsonSerializer.Serialize(dto.Content, JsonOptions)
             };
 
             _context.Resumes.Add(resume);
             await _context.SaveChangesAsync();
 
-            return new ResumeDto
-            {
-                Id = resume.Id,
-                Title = resume.Title,
-                ContentJson = resume.ContentJson,
-                CreatedAt = resume.CreatedAt,
-                UpdatedAt = resume.UpdatedAt
-            };
+            return ToDto(resume);
         }
 
         public async Task<ResumeDto?> UpdateResumeAsync(Guid id, UpdateResumeDto dto, Guid userId)
@@ -76,20 +77,13 @@ namespace Resumade.Api.Services
 
             if (resume == null) return null;
 
-            resume.Title = dto.Title;
-            resume.ContentJson = dto.ContentJson;
+            resume.Title = dto.Title.Trim();
+            resume.ContentJson = JsonSerializer.Serialize(dto.Content, JsonOptions);
             resume.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 
-            return new ResumeDto
-            {
-                Id = resume.Id,
-                Title = resume.Title,
-                ContentJson = resume.ContentJson,
-                CreatedAt = resume.CreatedAt,
-                UpdatedAt = resume.UpdatedAt
-            };
+            return ToDto(resume);
         }
 
         public async Task<bool> DeleteResumeAsync(Guid id, Guid userId)
