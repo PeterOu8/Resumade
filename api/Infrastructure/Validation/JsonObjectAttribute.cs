@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
-namespace Resumade.Api.Models.Dtos;
+namespace Resumade.Api.Infrastructure.Validation;
 
 public sealed class JsonObjectAttribute : ValidationAttribute
 {

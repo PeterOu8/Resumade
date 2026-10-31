@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Resumade.Api.Data;
 using Resumade.Api.Models;
-using Resumade.Api.Models.Dtos;
 using Npgsql;
+using Resumade.Api.Dtos.Auth;
 
 namespace Resumade.Api.Services
 {

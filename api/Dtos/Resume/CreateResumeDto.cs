@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Resumade.Api.Models.Dtos
+namespace Resumade.Api.Dtos.Resume
 {
-    public class UpdateResumeDto
+    public class CreateResumeDto
     {
         [Required(ErrorMessage = "Title is required")]
         [MaxLength(200, ErrorMessage = "Title cannot be longer than 200 characters")]

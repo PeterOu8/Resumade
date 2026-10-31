@@ -30,7 +30,12 @@
     <None Remove="Services/AI/**;Services/Applications/**;Services/Jobs/**;Services/Matching/**;Infrastructure/AI/**;Infrastructure/BackgroundJobs/**" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Infrastructure\" />
+    <Compile Include="Infrastructure\AI\AIMessage.cs" />
+    <Compile Include="Infrastructure\AI\AIProxyRequest.cs" />
+    <Compile Include="Infrastructure\AI\AIProxyResponse.cs" />
+    <Compile Include="Infrastructure\AI\AIProxyResult.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Folder Include="Migrations\" />
   </ItemGroup>
 </Project>

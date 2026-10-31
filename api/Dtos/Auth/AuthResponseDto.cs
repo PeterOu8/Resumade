@@ -1,4 +1,4 @@
-﻿namespace Resumade.Api.Models.Dtos
+﻿namespace Resumade.Api.Dtos.Auth
 {
     public class AuthResponseDto
     {

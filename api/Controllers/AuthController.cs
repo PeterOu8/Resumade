@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Resumade.Api.Models.Dtos;
 using Resumade.Api.Services;
 using System.Security.Claims;
 using Microsoft.AspNetCore.RateLimiting;
+using Resumade.Api.Dtos.Auth;
 
 namespace Resumade.Api.Controllers
 {

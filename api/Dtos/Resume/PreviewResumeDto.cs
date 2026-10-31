@@ -1,4 +1,4 @@
-﻿namespace Resumade.Api.Models.Dtos
+﻿namespace Resumade.Api.Dtos.Resume
 {
     public class ResumePreviewDto
     {
@@ -7,3 +7,4 @@
         public ResumeContentDto Content { get; set; } = null!;
     }
 }
+

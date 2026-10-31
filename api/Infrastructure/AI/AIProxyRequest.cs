@@ -1,4 +1,4 @@
-﻿namespace Resumade.Api.Models;
+﻿namespace Resumade.Api.Infrastructure.AI;
 
 public sealed record AIProxyRequest(
     string Provider,

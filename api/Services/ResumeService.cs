@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Resumade.Api.Data;
+using Resumade.Api.Dtos.Resume;
 using Resumade.Api.Models;
-using Resumade.Api.Models.Dtos;
 using System.Text.Json;
 
 namespace Resumade.Api.Services
@@ -18,7 +18,7 @@ namespace Resumade.Api.Services
         private static readonly JsonSerializerOptions JsonOptions =
             new(JsonSerializerDefaults.Web);
 
-        private static ResumeDto ToDto(Resume resume)
+        private static ResumeDto ToDto(Models.Resume resume)
         {
             var content = JsonSerializer.Deserialize<ResumeContentDto>(
                 resume.ContentJson, JsonOptions);
@@ -57,7 +57,7 @@ namespace Resumade.Api.Services
 
         public async Task<ResumeDto> CreateResumeAsync(CreateResumeDto dto, Guid userId)
         {
-            var resume = new Resume
+            var resume = new Models.Resume
             {
                 UserId = userId,
                 Title = dto.Title.Trim(),

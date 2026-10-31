@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Resumade.Api.Dtos.Resume;
 using Resumade.Api.Models;
-using Resumade.Api.Models.Dtos;
 using Resumade.Api.Services;
 using System.Security.Claims;
 
