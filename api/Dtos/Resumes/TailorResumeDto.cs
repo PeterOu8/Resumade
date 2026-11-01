@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Resumade.Api.Dtos.Resume;
+namespace Resumade.Api.Dtos.Resumes;
 
 public class TailorResumeDto
 {

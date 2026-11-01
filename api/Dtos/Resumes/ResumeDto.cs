@@ -1,4 +1,4 @@
-﻿namespace Resumade.Api.Dtos.Resume;
+﻿namespace Resumade.Api.Dtos.Resumes;
 
 public class ResumeDto
 {

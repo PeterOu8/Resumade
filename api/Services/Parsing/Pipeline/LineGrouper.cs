@@ -1,13 +1,13 @@
-﻿using Resumade.Api.Dtos;
+﻿using Resumade.Api.Services.Parsing.Primitives;
 
-namespace Resumade.Api.Services.ResumerParser
+namespace Resumade.Api.Services.Parsing.Pipeline
 {
-    public partial class ResumeParserService
+    internal static class LineGrouper
     {
         private static readonly HashSet<char> EndTriggers = [':', ',', '|', '.'];
-        private static readonly HashSet<char> BulletPoints = ['⋅', '∙', '•', '⦁', '⚫', '●', '⬤', '⚬', '○', '|', '-', '*'];
+        private static readonly HashSet<char> BulletPoints = ['⋅', '∙', '•', '⦁', '⚫', '●', '⬤', '⚬', '○', '▪', '◦', '‣', '–'];
 
-        public List<LineDto> GroupTextToLines(IReadOnlyList<TextItemDto> textItems)
+        public static List<Line> GroupTextToLines(IReadOnlyList<TextItem> textItems)
         {
             ArgumentNullException.ThrowIfNull(textItems);
 
@@ -22,11 +22,11 @@ namespace Resumade.Api.Services.ResumerParser
             return lines;
         }
 
-        private static List<LineDto> SplitAtLineEndings(
-            IReadOnlyList<TextItemDto> textItems)
+        private static List<Line> SplitAtLineEndings(
+            IReadOnlyList<TextItem> textItems)
         {
-            var lines = new List<LineDto>();
-            var currentLine = new List<TextItemDto>();
+            var lines = new List<Line>();
+            var currentLine = new List<TextItem>();
 
             foreach (var item in textItems)
             {
@@ -36,8 +36,8 @@ namespace Resumade.Api.Services.ResumerParser
                     {
                         currentLine.Add(item);
                     }
-                    lines.Add(new LineDto(currentLine));
-                    currentLine = new List<TextItemDto>();
+                    lines.Add(new Line(currentLine));
+                    currentLine.Clear();
                 }
                 else if (!string.IsNullOrWhiteSpace(item.Text))
                 {
@@ -48,16 +48,22 @@ namespace Resumade.Api.Services.ResumerParser
             // Preserve the final line even without an EOL marker.
             if (currentLine.Count > 0)
             {
-                lines.Add(new LineDto(currentLine));
+                lines.Add(new Line(currentLine));
             }
 
             return lines;
         }
 
         private static void MergeAdjacentItems(
-            List<TextItemDto> items,
+            List<TextItem> items,
             double typicalCharWidth)
         {
+            if (items.Count < 2 || !double.IsFinite(typicalCharWidth) || typicalCharWidth <= 0)
+                return;
+
+            const double MaxJoinGap = 1.0;
+            const double MaxOverlap = 0.5;
+
             // Work backwards so removing an item doesn't skip another pair.
             for (int i = items.Count - 1; i > 0; i--)
             {
@@ -66,10 +72,12 @@ namespace Resumade.Api.Services.ResumerParser
 
                 double gap = right.X - (left.X + left.Width);
 
+                if (gap > typicalCharWidth * MaxJoinGap || gap < -typicalCharWidth * MaxOverlap) continue;
+
                 if (gap <= typicalCharWidth)
                 {
                     string separator =
-                        ShouldAddSpace(left.Text, right.Text) ? " " : "";
+                        NeedSpacing(left.Text, right.Text) ? " " : "";
 
                     items[i - 1] = left with
                     {
@@ -82,15 +90,16 @@ namespace Resumade.Api.Services.ResumerParser
             }
         }
 
-        private static bool ShouldAddSpace(
+        private static bool NeedSpacing(
             string leftText,
             string rightText)
         {
+            if (string.IsNullOrEmpty(leftText) || string.IsNullOrEmpty(rightText))
+                return false;
+
             char leftEnd = leftText[^1];
             char rightStart = rightText[0];
 
-            if (string.IsNullOrEmpty(leftText) || string.IsNullOrEmpty(rightText))
-                return false;
 
             // Condition 1: Left ends with punctuation/bullet and right doesn't start with a space
             bool condition1 = (EndTriggers.Contains(leftEnd) || BulletPoints.Contains(leftEnd)) && rightStart != ' ';
@@ -102,7 +111,7 @@ namespace Resumade.Api.Services.ResumerParser
         }
 
         private static double GetCommonCharWidth(
-            IReadOnlyList<TextItemDto> textItems)
+            IReadOnlyList<TextItem> textItems)
         {
             var heightCounts = new Dictionary<double, int>();
             var fontCounts = new Dictionary<string, int>();

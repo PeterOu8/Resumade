@@ -1,10 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Resumade.Api.Dtos.Resume;
+namespace Resumade.Api.Dtos.Resumes;
 
 public class ResumeContentDto
 {
-    public PersonalInfoDto PersonalInfo { get; set; } = new();
+    public ProfileDto Profile { get; set; } = new();
     public string Summary { get; set; } = string.Empty;
 
     public List<SkillDto> KeySkills { get; set; } = [];
@@ -16,7 +16,7 @@ public class ResumeContentDto
     public List<ResumeEducationDto> Education { get; set; } = [];
 }
 
-public class PersonalInfoDto
+public class ProfileDto
 {
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
@@ -68,7 +68,6 @@ public class ResumeEducationDto
     public string StartDate { get; set; } = string.Empty;
     public string? EndDate { get; set; }
     public bool Current { get; set; }
-
 
     public string Location { get; set; } = string.Empty;
 

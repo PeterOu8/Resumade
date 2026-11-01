@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Resumade.Api.Data;
-using Resumade.Api.Dtos.Resume;
+using Resumade.Api.Dtos.Resumes;
 using Resumade.Api.Models;
 using System.Text.Json;
 

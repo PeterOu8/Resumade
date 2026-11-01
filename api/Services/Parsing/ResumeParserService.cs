@@ -1,6 +1,7 @@
 ﻿namespace Resumade.Api.Services
 {
-    public class ResumeParserService
+    public sealed class ResumeParserService
     {
+
     }
 }
