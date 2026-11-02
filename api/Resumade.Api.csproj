@@ -37,5 +37,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Migrations\" />
+    <InternalsVisibleTo Include="Resumade.Api.Tests" />
   </ItemGroup>
 </Project>

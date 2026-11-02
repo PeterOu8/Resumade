@@ -36,7 +36,7 @@ namespace Resumade.Api.Services.Parsing.Pipeline
                     {
                         currentLine.Add(item);
                     }
-                    lines.Add(new Line(currentLine));
+                    lines.Add(new Line(currentLine.ToList()));
                     currentLine.Clear();
                 }
                 else if (!string.IsNullOrWhiteSpace(item.Text))
@@ -77,7 +77,7 @@ namespace Resumade.Api.Services.Parsing.Pipeline
                 if (gap <= typicalCharWidth)
                 {
                     string separator =
-                        NeedSpacing(left.Text, right.Text) ? " " : "";
+                        NeedSpacing(left.Text, right.Text, gap > typicalCharWidth * 0.2) ? " " : "";
 
                     items[i - 1] = left with
                     {
@@ -92,7 +92,8 @@ namespace Resumade.Api.Services.Parsing.Pipeline
 
         private static bool NeedSpacing(
             string leftText,
-            string rightText)
+            string rightText,
+            bool hasWordGap)
         {
             if (string.IsNullOrEmpty(leftText) || string.IsNullOrEmpty(rightText))
                 return false;
@@ -107,7 +108,8 @@ namespace Resumade.Api.Services.Parsing.Pipeline
             // Condition 2: Left doesn't end with a space and right starts with '|' or a bullet
             bool condition2 = leftEnd != ' ' && BulletPoints.Contains(rightStart);
 
-            return condition1 || condition2;
+            bool betweenWords = hasWordGap && char.IsLetterOrDigit(leftEnd) && char.IsLetterOrDigit(rightStart);
+            return condition1 || condition2 || betweenWords;
         }
 
         private static double GetCommonCharWidth(

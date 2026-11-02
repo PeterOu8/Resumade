@@ -14,6 +14,15 @@ public class ResumeContentDto
     public List<ResumeProjectDto> Projects { get; set; } = [];
 
     public List<ResumeEducationDto> Education { get; set; } = [];
+
+    public List<ResumeAdditionalSectionDto> AdditionalSections { get; set; } = [];
+}
+
+public class ResumeAdditionalSectionDto
+{
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public List<string> Bullets { get; set; } = [];
 }
 
 public class ProfileDto

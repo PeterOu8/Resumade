@@ -68,11 +68,11 @@ From the root, with the API configuration above set:
 dotnet test Resumade.Api.slnx --no-build --no-restore
 ```
 
-Build first when source changes. The only current test is `HealthControllerTests.GetHealth_ReturnsExpectedResponse`, which checks the status, content type, and two response fields. It starts the application and requires startup configuration, but does not access the database.
+Build first when source changes. Parser tests cover section classification, field extraction, date precision, entry boundaries, and text-item grouping. Parse endpoint tests supply their own test JWT configuration and check authentication, request validation, and the request-to-content flow without connecting to a database. The health test uses the API startup configuration above and does not access the database.
 
 ## Known implementation gaps
 
 - Authentication actions have an `EnableRateLimiting("auth")` attribute, but `Program.cs` does not register a rate-limiting policy or middleware. Rate limiting is not configured.
-- Parser helpers and AI DTOs exist, but the API exposes no parsing or tailoring routes and does not register a parser service.
+- Parsing uses deterministic rules for common English resume layouts; unfamiliar headings and ambiguous entry layouts may need user correction. There is no tailoring endpoint.
 - `FileStorage:RootPath` is present in configuration but is unused. There is no document upload or storage endpoint.
-- Only the health endpoint has an automated test; account and resume operations have no tests in the current project.
+- Account and saved-resume CRUD operations have no automated tests in the current project.

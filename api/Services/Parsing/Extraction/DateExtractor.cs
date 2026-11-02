@@ -1,66 +1,55 @@
-﻿using System.Text.RegularExpressions;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
-namespace Resumade.Api.Services.ResumerParser
+namespace Resumade.Api.Services.Parsing.Extraction;
+
+internal static class DateExtractor
 {
-    internal static class DateExtractor
+    private const string Year = @"(?:19|20)\d{2}";
+    private const string Month = @"(?:jan(?:uary)?|feb(?:ruary|rero)?|mar(?:ch|zo)?|apr(?:il)?|may(?:o)?|jun(?:e|io)?|jul(?:y|io)?|aug(?:ust)?|sep(?:t(?:ember|iembre)?)?|oct(?:ober|ubre)?|nov(?:ember|iembre)?|dec(?:ember)?|ene(?:ro)?|abr(?:il)?|ago(?:sto)?|dic(?:iembre)?)";
+    private const string Date = $@"(?:{Month}\.?\s+{Year}|{Year}[-/](?:0?[1-9]|1[0-2])|(?:0?[1-9]|1[0-2])[-/]{Year}|{Year})";
+    private static readonly Regex Pattern = new(
+        $@"(?<![\p{{L}}\d/])(?<start>{Date})(?:\s*(?:[-–—−]|to|until)\s*(?<end>{Date}|present|current|now))?(?![\p{{L}}\d/])",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    internal sealed record DateRange(string StartDate, string? EndDate, bool Current, int Index, int Length);
+
+    internal static DateRange? Extract(string text)
     {
-        private static string ExtractDate(string line, bool isStart)
-        {
-            var years = Regex.Matches(line, @"(19|20)\d{2}")
-                .Select(m => m.Value)
-                .ToList();
+        var match = Pattern.Match(text);
+        if (!match.Success) return null;
 
-            if (years.Count == 0) return string.Empty;
-            if (years.Count == 1) return isStart ? years[0] : string.Empty;
-            return isStart ? years[0] : years[^1];
-        }
+        var end = match.Groups["end"].Value;
+        var current = Regex.IsMatch(end, @"^(present|current|now)$", RegexOptions.IgnoreCase);
+        return new DateRange(NormaliseDate(match.Groups["start"].Value),
+            end.Length == 0 || current ? null : NormaliseDate(end), current, match.Index, match.Length);
+    }
 
-        private static readonly Dictionary<string, string> MonthMap = new(StringComparer.OrdinalIgnoreCase)
+    internal static string Remove(string text)
+    {
+        var date = Extract(text);
+        return date is null ? text : text.Remove(date.Index, date.Length).Trim(' ', '|', ',', '–', '—', '-');
+    }
+
+    private static string NormaliseDate(string value)
+    {
+        if (Regex.IsMatch(value, $@"^{Year}$")) return value;
+
+        var numeric = Regex.Match(value, $@"^(?<year>{Year})[-/](?<month>\d{{1,2}})$");
+        if (!numeric.Success)
+            numeric = Regex.Match(value, $@"^(?<month>\d{{1,2}})[-/](?<year>{Year})$");
+        if (numeric.Success)
+            return $"{numeric.Groups["year"].Value}-{int.Parse(numeric.Groups["month"].Value, CultureInfo.InvariantCulture):00}";
+
+        var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var prefix = parts[0].TrimEnd('.').ToLowerInvariant()[..3];
+        var month = prefix switch
         {
-            // English
-            ["jan"] = "01",
-            ["january"] = "01",
-            ["feb"] = "02",
-            ["february"] = "02",
-            ["mar"] = "03",
-            ["march"] = "03",
-            ["apr"] = "04",
-            ["april"] = "04",
-            ["may"] = "05",
-            ["jun"] = "06",
-            ["june"] = "06",
-            ["jul"] = "07",
-            ["july"] = "07",
-            ["aug"] = "08",
-            ["august"] = "08",
-            ["sep"] = "09",
-            ["sept"] = "09",
-            ["september"] = "09",
-            ["oct"] = "10",
-            ["october"] = "10",
-            ["nov"] = "11",
-            ["november"] = "11",
-            ["dec"] = "12",
-            ["december"] = "12",
-            // Spanish
-            ["ene"] = "01",
-            ["enero"] = "01",
-            ["febrero"] = "02",
-            ["marzo"] = "03",
-            ["abr"] = "04",
-            ["abril"] = "04",
-            ["mayo"] = "05",
-            ["junio"] = "06",
-            ["julio"] = "07",
-            ["ago"] = "08",
-            ["agosto"] = "08",
-            ["septiembre"] = "09",
-            ["octubre"] = "10",
-            ["noviembre"] = "11",
-            ["dic"] = "12",
-            ["diciembre"] = "12",
+            "jan" or "ene" => 1, "feb" => 2, "mar" => 3, "apr" or "abr" => 4,
+            "may" => 5, "jun" => 6, "jul" => 7, "aug" or "ago" => 8,
+            "sep" => 9, "oct" => 10, "nov" => 11, "dec" or "dic" => 12,
+            _ => 0
         };
-
-
+        return $"{parts[^1]}-{month:00}";
     }
 }

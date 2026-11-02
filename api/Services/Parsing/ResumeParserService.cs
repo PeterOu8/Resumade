@@ -1,29 +1,56 @@
-﻿using Resumade.Api.Dtos.Resumes;
-using Resumade.Api.Services.Parsing.Primitives;
-using Resumade.Api.Services.Parsing.Pipeline;
+using Resumade.Api.Dtos.Resumes;
 using Resumade.Api.Services.Parsing.Extraction;
+using Resumade.Api.Services.Parsing.Pipeline;
+using Resumade.Api.Services.Parsing.Primitives;
 
-namespace Resumade.Api.Services.Parsing
+namespace Resumade.Api.Services.Parsing;
+
+public sealed class ResumeParserService
 {
-    public sealed class ResumeParserService
+    internal ResumeContentDto Parse(IReadOnlyList<TextItem> items)
     {
+        var lines = LineGrouper.GroupTextToLines(items);
+        return Extract(SectionGrouper.GroupLinesToSections(lines));
+    }
 
-        internal ResumeContentDto Parse(List<TextItem> items)
+    internal static ResumeContentDto Extract(IReadOnlyList<Section> sections)
+    {
+        var content = new ResumeContentDto();
+        var profileLines = new List<Line>();
+        var summaries = new List<string>();
+
+        // Keep repeated sections separate so entries retain document order.
+        foreach (var section in sections)
         {
-            var textItems = TextItemMapper.MapTextItems(items);
-            var lines = LineGrouper.GroupTextToLines(textItems);
-            var sections = SectionGrouper.GroupLinesToSections(lines);
-
-            return new ResumeContentDto
+            switch (SectionGrouper.Classify(section.SectionName))
             {
-                Profile = ProfileExtractor.Extract(sections.Get(SectionKind.Header)),
-                Summary = SummaryExtractor.Extract(sections.Get(SectionKind.Summary)),
-                KeySkills = SkillsExtractor.Extract(sections.Get(SectionKind.Skills)),
-                Experience = ExperienceExtractor.Extract(sections.Get(SectionKind.Experience)),
-                Projects = ProjectExtractor.Extract(sections.Get(SectionKind.Projects)),
-                Education = EducationExtractor.Extract(sections.Get(SectionKind.Education)),
-            };
+                case SectionKind.Profile:
+                    profileLines.AddRange(section.Lines);
+                    break;
+                case SectionKind.Summary:
+                    var summary = SummaryExtractor.Extract(section);
+                    if (summary.Length > 0) summaries.Add(summary);
+                    break;
+                case SectionKind.Skills:
+                    SkillsExtractor.Merge(content.KeySkills, SkillsExtractor.Extract(section));
+                    break;
+                case SectionKind.Experience:
+                    content.Experience.AddRange(ExperienceExtractor.Extract(section));
+                    break;
+                case SectionKind.Projects:
+                    content.Projects.AddRange(ProjectExtractor.Extract(section));
+                    break;
+                case SectionKind.Education:
+                    content.Education.AddRange(EducationExtractor.Extract(section));
+                    break;
+                case SectionKind.Unknown:
+                    content.AdditionalSections.Add(AdditionalSectionExtractor.Extract(section));
+                    break;
+            }
         }
 
+        content.Profile = ProfileExtractor.Extract(new Section("Profile", profileLines));
+        content.Summary = string.Join("\n\n", summaries);
+        return content;
     }
 }

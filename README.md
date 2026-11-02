@@ -12,7 +12,7 @@ api/                         ASP.NET Core 10 API
   Models/                    User and resume persistence models
   Migrations/                PostgreSQL schema migrations
   Services/                  Authentication, resume CRUD, and parser helpers
-tests/Resumade.Api.Tests/     API health endpoint test
+tests/Resumade.Api.Tests/     Parser unit tests and API integration tests
 Resumade.Api.slnx             Backend and test solution
 ```
 
@@ -39,8 +39,9 @@ The API HTTPS profile uses `https://localhost:7131` and `http://localhost:5011`.
 | Saved resumes | Authenticated create, list, retrieve, replace, and delete operations scoped to the token's user. |
 | Persistence | User records and serialized resume content, with explicit EF Core migrations. |
 | Health | Public `/api/health` endpoint reporting process health without querying the database. |
-| Automated tests | One backend integration test checks the health endpoint response. |
+| Resume parsing | Authenticated text-item JSON input grouped into sections and extracted into structured resume content. |
+| Automated tests | Section extraction fixtures, parser pipeline checks, parse endpoint validation/authentication, and health. |
 
-The API does not currently expose profile editing, document storage/upload, resume versioning, parsing, tailoring, or PDF export endpoints. Parser helpers and AI contract types in the source do not provide these routes. `FileStorage:RootPath` is present in configuration but is not used by the running API.
+The API does not currently expose profile editing, document storage/upload, resume versioning, tailoring, or PDF export endpoints. Parsing accepts frontend-extracted text items rather than uploaded files. `FileStorage:RootPath` is present in configuration but is not used by the running API.
 
 See [development setup and checks](docs/development.md) and the [API reference and data model](docs/api.md).
