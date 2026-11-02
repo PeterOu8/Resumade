@@ -6,7 +6,7 @@ namespace Resumade.Api.Services.Parsing.Extraction
 {
     internal static class ProfileExtractor
     {
-        private static ProfileDto ExtractProfile(Section profileSection)
+        internal static ProfileDto Extract(Section profileSection)
         {
             var info = new ProfileDto();
 

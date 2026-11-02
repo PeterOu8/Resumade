@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Resumade.Api.Dtos.Resumes;
-using Resumade.Api.Models;
 using Resumade.Api.Services;
 using System.Security.Claims;
+using Resumade.Api.Dtos.Parsing;
+using Resumade.Api.Infrastructure.Validation;
+using Resumade.Api.Services.Parsing;
+using Resumade.Api.Services.Parsing.Pipeline;
 
 namespace Resumade.Api.Controllers
 {
@@ -13,10 +16,12 @@ namespace Resumade.Api.Controllers
     public class ResumesController : ControllerBase
     {
         private readonly ResumeService _resumeService;
+        private readonly ResumeParserService _resumeParserService;
 
-        public ResumesController(ResumeService resumeService)
+        public ResumesController(ResumeService resumeService, ResumeParserService resumeParserService)
         {
             _resumeService = resumeService;
+            _resumeParserService = resumeParserService;
         }
 
         private Guid GetUserId()
@@ -61,6 +66,30 @@ namespace Resumade.Api.Controllers
             var deleted = await _resumeService.DeleteResumeAsync(id, GetUserId());
             if (!deleted) return NotFound();
             return NoContent();
+        }
+
+        [HttpPost("parse")]
+        public ActionResult<ResumeContentDto> Parse([FromBody] List<TextItemDto> request)
+        {
+            var error = ParseRequestValidator.Validate(request);
+
+            if (error is not null)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Invalid resume text items",
+                    Detail = error,
+                    Status = StatusCodes.Status400BadRequest
+                });
+            }
+
+            var sanitisedItems = request!
+                .Select(TextItemMapper.Sanitise)
+                .ToList();
+            var textItems = TextItemMapper.MapTextItems(sanitisedItems);
+            var resumeContent = _resumeParserService.Parse(textItems);
+
+            return Ok(resumeContent);
         }
     }
 }

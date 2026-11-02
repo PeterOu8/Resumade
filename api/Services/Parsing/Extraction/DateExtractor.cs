@@ -2,7 +2,7 @@
 
 namespace Resumade.Api.Services.ResumerParser
 {
-    public partial class ResumeParserService
+    internal static class DateExtractor
     {
         private static string ExtractDate(string line, bool isStart)
         {

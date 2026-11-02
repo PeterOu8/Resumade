@@ -1,5 +1,4 @@
-﻿namespace Resumade.Api.Services.Parsing.Models
+﻿namespace Resumade.Api.Services.Parsing.Primitives
 {
-    internal sealed record Line(
-        List<TextItem> Items);
+    internal sealed record Line(List<TextItem> Items);
 }
