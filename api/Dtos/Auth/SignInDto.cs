@@ -1,6 +1,6 @@
 ﻿namespace Resumade.Api.Dtos.Auth
 {
-    public class LoginDto
+    public class SignInDto
     {
         [System.ComponentModel.DataAnnotations.Required]
         [System.ComponentModel.DataAnnotations.EmailAddress]

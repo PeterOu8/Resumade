@@ -4,7 +4,7 @@ using Resumade.Api.Dtos.Resumes;
 using Resumade.Api.Models;
 using System.Text.Json;
 
-namespace Resumade.Api.Services
+namespace Resumade.Api.Services.Resume
 {
     public class ResumeService
     {

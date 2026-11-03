@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Resumade.Api.Services;
 using System.Security.Claims;
 using Microsoft.AspNetCore.RateLimiting;
 using Resumade.Api.Dtos.Auth;
+using Resumade.Api.Services.Auth;
 
 namespace Resumade.Api.Controllers
 {
@@ -20,7 +20,7 @@ namespace Resumade.Api.Controllers
 
         [HttpPost("register")]
         [EnableRateLimiting("auth")]
-        public async Task<ActionResult<AuthResponseDto>> Register(RegisterDto dto)
+        public async Task<ActionResult<AuthResponse>> Register(RegisterDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
                 return BadRequest("Email and password are required.");
@@ -35,17 +35,34 @@ namespace Resumade.Api.Controllers
 
         [HttpPost("login")]
         [EnableRateLimiting("auth")]
-        public async Task<ActionResult<AuthResponseDto>> Login(LoginDto dto)
+        public async Task<ActionResult<AuthResponse>> Login(SignInDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
                 return BadRequest("Email and password are required.");
 
-            var result = await _authService.LoginAsync(dto);
+            var result = await _authService.SignInAsync(dto);
 
             if (result == null)
                 return Unauthorized("Invalid email or password.");
 
             return Ok(result);
+        }
+
+        [HttpPost("google")]
+        [EnableRateLimiting("auth")]
+        public async Task<ActionResult<AuthResponse>> Google(GoogleSignInDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.IdToken))
+                return BadRequest("Google ID token is required.");
+
+            try
+            {
+                return Ok(await _authService.SignInWithGoogleAsync(dto.IdToken));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Unauthorized();
+            }
         }
 
         [Authorize]

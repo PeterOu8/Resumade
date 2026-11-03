@@ -1,12 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Resumade.Api.Dtos.Resumes;
-using Resumade.Api.Services;
 using System.Security.Claims;
 using Resumade.Api.Dtos.Parsing;
 using Resumade.Api.Infrastructure.Validation;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Parsing.Pipeline;
+using Resumade.Api.Services.Resume;
 
 namespace Resumade.Api.Controllers
 {

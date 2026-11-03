@@ -3,8 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Resumade.Api.Data;
-using Resumade.Api.Services;
+using Resumade.Api.Services.Auth;
 using Resumade.Api.Services.Parsing;
+using Resumade.Api.Services.Resume;
 using Scalar.AspNetCore;
 using System.Text;
 
