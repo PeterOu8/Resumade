@@ -185,6 +185,31 @@ English month names and common numeric month/year formats normalize to `YYYY-MM`
 
 Descriptions and skill spelling are preserved. Projects only include technologies explicitly listed under labels such as `Tech stack:` or `Technologies:`. Education majors come from explicit major labels or a degree's “in” phrase. The parser does not infer missing employers, technologies, or qualifications. This is a best-effort parser for common layouts, not a trained entity-recognition model; ambiguous header ordering or entries without structural boundaries can need manual correction.
 
+## AI parsing and tailoring
+
+The AI endpoints accept bring-your-own provider credentials and are available to guest and signed-in editor sessions. Resumade supports `openai`, `claude`, `grok`, `gemini`, and `deepseek`. Provider keys are used only for the current upstream request; the API does not persist them or include them in resume data.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| POST | `/api/ai/resumes/parse` | Extract plain resume text into Resumade content. |
+| POST | `/api/ai/resumes/tailor` | Tailor existing Resumade content to a job description. |
+
+Both requests include an `ai` object:
+
+```json
+{
+  "provider": "openai",
+  "apiKey": "<provider-api-key>",
+  "model": "gpt-6-astra"
+}
+```
+
+`model` may be omitted to use Resumade's provider default. Parsing also accepts `text` (20 to 100,000 characters). Tailoring accepts `resume`, `jobDescription` (20 to 20,000 characters), and optional `instructions` (up to 2,000 characters). A successful response is `{ "content": <ResumeContentDto> }`.
+
+Resumade sends a strict JSON schema to providers that support schema-constrained output. All provider responses—including JSON-mode providers—are then independently validated on the backend. Every required field, nested type, nullable field, and array item must match `ResumeContentDto`; unknown properties, oversized values, and malformed JSON are rejected before content reaches the editor. Tailoring prompts prohibit invented facts and preserve identity, contact, dates, institutions, employers, and entry structure. The web editor computes a field-level comparison and applies only the changes selected by the user.
+
+Invalid keys return `401` or `403`, provider throttling returns `429`, invalid requests return `400`, and upstream or schema failures return `502`. The web proxy uses a 95-second timeout for AI requests.
+
 ## Persistence
 
 `ResumadeDbContext` uses EF Core with PostgreSQL. A user has a GUID, unique email, password hash, display name, and UTC creation timestamp. A resume has a GUID, user foreign key, title, serialized `ContentJson`, and UTC creation/update timestamps. The service serializes and deserializes content using web JSON defaults; clients receive a content object rather than the raw JSON string.
