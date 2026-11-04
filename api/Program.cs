@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Resumade.Api.Data;
 using Resumade.Api.Services.Auth;
+using Resumade.Api.Services.AI;
 using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Resume;
@@ -50,6 +51,12 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ResumeService>();
 builder.Services.AddScoped<ResumeParserService>();
 builder.Services.AddSingleton<ResumeGenerationService>();
+builder.Services.AddScoped<AiResumeService>();
+builder.Services.AddHttpClient<AiProviderService>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(90);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("Resumade/1.0");
+});
 
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"]
