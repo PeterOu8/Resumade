@@ -9,6 +9,7 @@ namespace Resumade.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableRateLimiting("auth")]
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
@@ -19,7 +20,6 @@ namespace Resumade.Api.Controllers
         }
 
         [HttpPost("register")]
-        [EnableRateLimiting("auth")]
         public async Task<ActionResult<AuthResponse>> Register(RegisterDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
@@ -34,7 +34,6 @@ namespace Resumade.Api.Controllers
         }
 
         [HttpPost("signin")]
-        [EnableRateLimiting("auth")]
         public async Task<ActionResult<AuthResponse>> SignIn(SignInDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
@@ -49,7 +48,6 @@ namespace Resumade.Api.Controllers
         }
 
         [HttpPost("google")]
-        [EnableRateLimiting("auth")]
         public async Task<ActionResult<AuthResponse>> Google(GoogleSignInDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.IdToken))

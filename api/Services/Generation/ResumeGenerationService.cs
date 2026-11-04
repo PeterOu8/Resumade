@@ -5,6 +5,7 @@ namespace Resumade.Api.Services.Pdf;
 
 public sealed class ResumeGenerationService : IAsyncDisposable
 {
+    private static readonly TimeSpan RenderTimeout = TimeSpan.FromSeconds(25);
     private const string DocumentPolicy = """
         <!doctype html>
         <meta charset="utf-8">
@@ -32,6 +33,13 @@ public sealed class ResumeGenerationService : IAsyncDisposable
 
     private static async Task<IBrowser> StartBrowserAsync()
     {
+        if (OperatingSystem.IsLinux() &&
+            string.Equals(Environment.UserName, "root", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Chromium PDF rendering must run as a non-root user so its sandbox remains enabled.");
+        }
+
         var executablePath =
             Environment.GetEnvironmentVariable(
                 "PUPPETEER_EXECUTABLE_PATH");
@@ -46,6 +54,7 @@ public sealed class ResumeGenerationService : IAsyncDisposable
         return await Puppeteer.LaunchAsync(new LaunchOptions
         {
             Headless = true,
+            // Deliberately do not pass --no-sandbox.
             ExecutablePath = executablePath
         });
     }
@@ -58,7 +67,12 @@ public sealed class ResumeGenerationService : IAsyncDisposable
 
         try
         {
+            // Browser provisioning is a singleton cold-start operation. The hard
+            // per-document budget begins once the shared browser is available.
             var browser = await GetBrowserAsync().WaitAsync(ct);
+            using var renderTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            renderTimeout.CancelAfter(RenderTimeout);
+            var renderToken = renderTimeout.Token;
 
             await using var context = await browser.CreateBrowserContextAsync();
             await using var page = await context.NewPageAsync();
@@ -69,10 +83,14 @@ public sealed class ResumeGenerationService : IAsyncDisposable
             await page.SetRequestInterceptionAsync(true);
 
             page.AddRequestInterceptor(request =>
-                request.Url.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
-                request.Url.Equals("about:blank", StringComparison.OrdinalIgnoreCase)
-                    ? request.ContinueAsync()
-                    : request.AbortAsync());
+            {
+                // Never permit a document navigation, including data:, file://,
+                // loopback, private/link-local networks, or cloud metadata hosts.
+                // Self-contained data URLs are allowed only as subresources.
+                var allow = !request.IsNavigationRequest &&
+                    request.Url.StartsWith("data:", StringComparison.OrdinalIgnoreCase);
+                return allow ? request.ContinueAsync() : request.AbortAsync();
+            });
 
             await page.SetContentAsync(
                 DocumentPolicy + html,
@@ -80,7 +98,7 @@ public sealed class ResumeGenerationService : IAsyncDisposable
                 {
                     WaitUntil = [WaitUntilNavigation.Load],
                     Timeout = 20000
-                }).WaitAsync(ct);
+                }).WaitAsync(renderToken);
 
             return await page.PdfDataAsync(new PdfOptions
             {
@@ -89,7 +107,7 @@ public sealed class ResumeGenerationService : IAsyncDisposable
                 PrintBackground = true,
                 WaitForFonts = true,
                 Timeout = 20000
-            }).WaitAsync(ct);
+            }).WaitAsync(renderToken);
         }
         finally
         {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Resumade.Api.Dtos.AI;
 using Resumade.Api.Services.AI;
 
@@ -11,6 +12,7 @@ namespace Resumade.Api.Controllers;
 public sealed class AiResumesController(AiResumeService aiResumeService) : ControllerBase
 {
     [HttpPost("parse")]
+    [EnableRateLimiting("ai")]
     [RequestSizeLimit(500_000)]
     public async Task<ActionResult<AiResumeResponseDto>> Parse(AiParseResumeDto request, CancellationToken cancellationToken)
     {
@@ -26,6 +28,7 @@ public sealed class AiResumesController(AiResumeService aiResumeService) : Contr
     }
 
     [HttpPost("tailor")]
+    [EnableRateLimiting("ai")]
     [RequestSizeLimit(500_000)]
     public async Task<ActionResult<AiResumeResponseDto>> Tailor(AiTailorResumeDto request, CancellationToken cancellationToken)
     {

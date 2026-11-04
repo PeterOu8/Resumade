@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Resumade.Api.Dtos.Resumes;
 using System.Security.Claims;
 using Resumade.Api.Dtos.Parsing;
@@ -51,6 +52,7 @@ namespace Resumade.Api.Controllers
 
         [AllowAnonymous]
         [HttpPost("pdf")]
+        [EnableRateLimiting("pdf")]
         [RequestSizeLimit(2_000_000)]
         [Produces("application/pdf")]
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -87,6 +89,7 @@ namespace Resumade.Api.Controllers
 
         [AllowAnonymous]
         [HttpPost("parse")]
+        [EnableRateLimiting("parse")]
         public ActionResult<ResumeContentDto> Parse([FromBody] List<TextItemDto> request)
         {
             var error = ParseRequestValidator.Validate(request);

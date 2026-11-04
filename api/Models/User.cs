@@ -12,6 +12,10 @@
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public int FailedSignInAttempts { get; set; }
+
+        public DateTime? LockoutEndUtc { get; set; }
+
         public ICollection<Resume> Resumes { get; set; } = new List<Resume>();
     }
 }

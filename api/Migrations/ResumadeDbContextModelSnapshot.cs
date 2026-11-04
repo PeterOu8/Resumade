@@ -69,6 +69,12 @@ namespace Resumade.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("FailedSignInAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("LockoutEndUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");

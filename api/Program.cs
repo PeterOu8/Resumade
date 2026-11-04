@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -9,6 +10,8 @@ using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Resume;
 using Scalar.AspNetCore;
+using System.Globalization;
+using System.Threading.RateLimiting;
 using System.Text;
 
 
@@ -18,6 +21,25 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = static (context, _) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext.Response.Headers.RetryAfter =
+                Math.Ceiling(retryAfter.TotalSeconds).ToString(CultureInfo.InvariantCulture);
+        }
+
+        return ValueTask.CompletedTask;
+    };
+
+    options.AddPolicy("auth", httpContext => FixedWindowPerIp(httpContext, 5, TimeSpan.FromMinutes(1)));
+    options.AddPolicy("pdf", httpContext => FixedWindowPerIp(httpContext, 3, TimeSpan.FromMinutes(1)));
+    options.AddPolicy("parse", httpContext => FixedWindowPerIp(httpContext, 20, TimeSpan.FromMinutes(1)));
+    options.AddPolicy("ai", httpContext => FixedWindowPerIp(httpContext, 10, TimeSpan.FromMinutes(1)));
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -92,6 +114,7 @@ var app = builder.Build();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("Frontend");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -104,5 +127,23 @@ if (app.Environment.IsDevelopment())
 app.MapControllers();
 
 app.Run();
+
+static RateLimitPartition<string> FixedWindowPerIp(
+    HttpContext context,
+    int permitLimit,
+    TimeSpan window)
+{
+    // RemoteIpAddress is populated by Kestrel. Deployments behind a proxy should
+    // configure trusted ForwardedHeaders known proxies/networks rather than trust
+    // arbitrary X-Forwarded-For values supplied by clients.
+    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+    {
+        PermitLimit = permitLimit,
+        Window = window,
+        QueueLimit = 0,
+        AutoReplenishment = true
+    });
+}
 
 public partial class Program;

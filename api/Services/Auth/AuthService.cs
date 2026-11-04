@@ -14,6 +14,8 @@ namespace Resumade.Api.Services.Auth
 {
     public class AuthService
     {
+        private const int MaxFailedSignInAttempts = 5;
+        private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
         private readonly ResumadeDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly PasswordHasher<User> _passwordHasher = new();
@@ -119,16 +121,34 @@ namespace Resumade.Api.Services.Auth
             if (user == null || string.IsNullOrEmpty(user.PasswordHash))
                 return null;
 
+            var now = DateTime.UtcNow;
+            if (user.LockoutEndUtc > now)
+                return null;
+
             var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
 
             if (result == PasswordVerificationResult.Failed)
+            {
+                user.FailedSignInAttempts++;
+                if (user.FailedSignInAttempts >= MaxFailedSignInAttempts)
+                {
+                    user.FailedSignInAttempts = 0;
+                    user.LockoutEndUtc = now.Add(LockoutDuration);
+                }
+
+                await _context.SaveChangesAsync();
                 return null;
+            }
+
+            user.FailedSignInAttempts = 0;
+            user.LockoutEndUtc = null;
 
             if (result == PasswordVerificationResult.SuccessRehashNeeded)
             {
                 user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
-                await _context.SaveChangesAsync();
             }
+
+            await _context.SaveChangesAsync();
 
             return CreateAuthResponse(user);
         }
