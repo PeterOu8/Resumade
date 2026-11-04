@@ -1,0 +1,9 @@
+**
+!**/*.cs
+!**/*.csproj
+!appsettings.json
+!packages.lock.json
+**/bin
+**/obj
+**/.vs
+**/.build

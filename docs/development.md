@@ -124,8 +124,16 @@ After changing NuGet dependencies, run `dotnet restore Resumade.Api.slnx --force
 1. In **Settings → Actions → General**, enable GitHub Actions and allow GitHub-authored actions if the repository restricts which actions can run. Use the read-only default workflow permissions. CI requires no repository secrets.
 2. After both checks have succeeded on a PR, create a branch protection rule or ruleset for `main`. Require a pull request and require the GitHub Actions checks **Frontend checks** and **Backend checks**. Both jobs report on every eligible PR because filtering happens inside the job. Workflow-level PR path filters can leave a required check pending. [GitHub's required status check documentation](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)
 
-### Future Azure Container Apps deployment
+### Deploy the API to Azure Container Apps
 
-A separate deployment workflow can gate releases on a successful backend CI run for the same commit on protected `main`. It can then publish a commit-tagged image to Azure Container Registry and deploy that image as a Container Apps revision. Use a protected GitHub environment and Azure workload identity federation for short-lived credentials. [Azure Container Apps deployment](https://learn.microsoft.com/en-us/azure/container-apps/github-actions) and [GitHub Actions OIDC for Azure](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure)
+1. Build the Linux image from the repository root with `docker build --platform linux/amd64 -t resumade-api:local api`. The image listens on port 8080 and includes Chrome and fonts. The API runs as a non-root user and requires Chromium sandboxing for PDF export.
+2. Push the release commit to `main`. After backend tests pass, Backend CI builds the image, checks `/api/health`, and publishes `ghcr.io/peterou8/resumade-api:<commit-sha>`. On the first release, open the GitHub package settings and set visibility to Public for anonymous pulls.
+3. Confirm the existing PostgreSQL database has the migrations in this guide. Create a Consumption Container Apps environment. Select **Don't save logs** to use live log streaming without storing logs in Log Analytics.
+4. Create the Container App from the commit-tagged image. Enable external HTTPS ingress, disable insecure connections, and set the target port to 8080. Start with 0.5 vCPU, 1 GiB RAM, and zero to one replicas. Set an HTTP readiness probe on `/api/health`.
+5. Reference Azure Container App secrets from `ConnectionStrings__ResumadeDatabase`, `Jwt__Key`, and `Resend__ApiKey`. Set `Google__ClientId` to the frontend Google client ID. Use the sender, frontend base URL, and allowed frontend origin from this guide.
+6. Verify `/api/health` over the app's public HTTPS URL. Set Vercel's production `API_URL` to that origin and redeploy the frontend. The Google OAuth callback remains on the frontend.
+7. Test registration and verification, returning Google sign-in, resume storage, and PDF import and export. Test PDF export in the Azure revision because Chromium depends on the hosting environment's sandbox support.
+
+Consumption usage above the free allowance can incur charges. [Azure Container Apps pricing](https://azure.microsoft.com/en-us/products/container-apps/)
 
 See the [API reference](api.md) for endpoint contracts and the [page gallery](screenshots.md) for the main flows.
