@@ -131,11 +131,12 @@ jobs:
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --tag "$image" api > "$RUNNER_TEMP/resumade-build.log" 2>&1; then
             cat "$RUNNER_TEMP/resumade-build.log"
-            build_error=$(grep -E 'ERROR:|failed to solve' "$RUNNER_TEMP/resumade-build.log" | tail -1)
+            build_error=$(grep -E 'ERROR:|failed to solve' "$RUNNER_TEMP/resumade-build.log" | tail -1 || true)
             echo "::error::Container build failed. $build_error"
             exit 1
           fi
-          container=$(docker run --detach --publish 127.0.0.1:18080:8080 \
+          # Chrome needs namespace access for its sandbox on the hosted Docker runner.
+          container=$(docker run --detach --cap-add=SYS_ADMIN --publish 127.0.0.1:18080:8080 \
             --env Jwt__Key=container-smoke-test-key-at-least-32-characters \
             --env 'ConnectionStrings__ResumadeDatabase=Host=localhost;Database=unused' "$image")
           trap 'docker logs "$container"; docker rm --force "$container" >/dev/null' EXIT
@@ -149,7 +150,7 @@ jobs:
             --data '{"title":"Container smoke test","html":"<h1>Container smoke test</h1>"}' \
             --output "$RUNNER_TEMP/resumade-smoke.pdf" http://127.0.0.1:18080/api/resumes/pdf ||
             [[ "$(head -c 5 "$RUNNER_TEMP/resumade-smoke.pdf")" != '%PDF-' ]]; then
-            browser_error=$(docker logs "$container" 2>&1 | grep -Ei 'sandbox|failed to launch|operation not permitted' | tail -1)
+            browser_error=$(docker logs "$container" 2>&1 | grep -Ei 'sandbox|failed to launch|operation not permitted' | tail -1 || true)
             echo "::error::The container PDF smoke test failed. $browser_error"
             exit 1
           fi
