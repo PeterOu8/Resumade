@@ -5,16 +5,6 @@ on:
     branches: [main]
   push:
     branches: [main]
-    paths:
-      - 'api/**'
-      - 'tests/**'
-      - 'Resumade.Api.slnx'
-      - '.github/**'
-      - '.gitignore'
-      - 'Directory.Build.*'
-      - 'Directory.Packages.props'
-      - 'global.json'
-      - '[Nn]u[Gg]et.[Cc]onfig'
   workflow_dispatch:
 
 permissions:
@@ -90,10 +80,6 @@ jobs:
           ConnectionStrings__ResumadeDatabase: Host=127.0.0.1;Database=unused
           RESUMADE_AUTH_TEST_POSTGRES: Host=127.0.0.1;Port=${{ job.services.postgres.ports[5432] }};Database=resumade_test;Username=postgres;Password=resumade-test-only
         run: |
-          # Use the runner image's system Chrome with sandboxing enabled.
-          PUPPETEER_EXECUTABLE_PATH=$(command -v google-chrome)
-          export PUPPETEER_EXECUTABLE_PATH
-          "$PUPPETEER_EXECUTABLE_PATH" --version
           dotnet test Resumade.Api.slnx --configuration Release --no-build \
             --results-directory TestResults --logger 'trx;LogFileName=backend-tests.trx'
 
@@ -135,23 +121,13 @@ jobs:
             echo "::error::Container build failed. $build_error"
             exit 1
           fi
-          # Chrome needs namespace access for its sandbox on the hosted Docker runner.
-          container=$(docker run --detach --cap-add=SYS_ADMIN --publish 127.0.0.1:18080:8080 \
+          container=$(docker run --detach --publish 127.0.0.1:18080:8080 \
             --env Jwt__Key=container-smoke-test-key-at-least-32-characters \
             --env 'ConnectionStrings__ResumadeDatabase=Host=localhost;Database=unused' "$image")
           trap 'docker logs "$container"; docker rm --force "$container" >/dev/null' EXIT
           if ! curl --fail --silent --show-error --retry 10 --retry-all-errors \
             --retry-delay 1 --max-time 4 http://127.0.0.1:18080/api/health; then
             echo "::error::The container did not pass its HTTP health check."
-            exit 1
-          fi
-          if ! curl --fail --silent --show-error --max-time 45 \
-            --header 'Content-Type: application/json' \
-            --data '{"title":"Container smoke test","html":"<h1>Container smoke test</h1>"}' \
-            --output "$RUNNER_TEMP/resumade-smoke.pdf" http://127.0.0.1:18080/api/resumes/pdf ||
-            [[ "$(head -c 5 "$RUNNER_TEMP/resumade-smoke.pdf")" != '%PDF-' ]]; then
-            browser_error=$(docker logs "$container" 2>&1 | grep -Ei 'sandbox|failed to launch|operation not permitted' | tail -1 || true)
-            echo "::error::The container PDF smoke test failed. $browser_error"
             exit 1
           fi
 
@@ -162,3 +138,40 @@ jobs:
         run: |
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           docker push "${IMAGE,,}"
+
+  deploy:
+    name: Deploy backend to Azure
+    needs: publish-image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Sign in to Azure with GitHub OIDC
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Update Azure Container App image
+        env:
+          IMAGE: ghcr.io/${{ github.repository_owner }}/resumade-api:${{ github.sha }}
+          RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          CONTAINER_APP: ${{ vars.AZURE_CONTAINER_APP_NAME }}
+        run: |
+          image="${IMAGE,,}"
+          az containerapp update \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --image "$image" \
+            --output none
+          az containerapp show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$CONTAINER_APP" \
+            --query properties.latestReadyRevisionName \
+            --output tsv

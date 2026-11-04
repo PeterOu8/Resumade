@@ -67,6 +67,10 @@ jobs:
         if: steps.scope.outputs.skip != 'true'
         run: node --test scripts/auth.test.mjs
 
+      - name: Test frontend PDF generation
+        if: steps.scope.outputs.skip != 'true'
+        run: npm test
+
       - name: Type check
         if: steps.scope.outputs.skip != 'true'
         run: |

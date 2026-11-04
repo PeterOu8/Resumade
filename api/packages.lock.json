@@ -69,17 +69,6 @@
           "Npgsql": "10.0.3"
         }
       },
-      "PuppeteerSharp": {
-        "type": "Direct",
-        "requested": "[25.15.0, )",
-        "resolved": "25.15.0",
-        "contentHash": "iTM/9GBCzgAjRA18zIH5g4yoy4nDlT4LEfKDIm2YyciDywC9HvVCQj97RAmMefPSoaKkA5PfmRrO0Z2+LfzmQg==",
-        "dependencies": {
-          "Microsoft.IO.RecyclableMemoryStream": "3.0.1",
-          "ReactiveExtensionsSharp": "0.3.0",
-          "WebDriverBiDi": "0.0.61"
-        }
-      },
       "Resend": {
         "type": "Direct",
         "requested": "[0.24.0, )",
@@ -253,11 +242,6 @@
           "Microsoft.IdentityModel.Logging": "8.19.2"
         }
       },
-      "Microsoft.IO.RecyclableMemoryStream": {
-        "type": "Transitive",
-        "resolved": "3.0.1",
-        "contentHash": "s/s20YTVY9r9TPfTrN5g8zPF1YhwxyqO6PxUkrYTGI2B+OGPe9AdajWZrLhFqXIvqIW23fnUE4+ztrUWNU1+9g=="
-      },
       "Microsoft.OpenApi": {
         "type": "Transitive",
         "resolved": "2.7.5",
@@ -285,11 +269,6 @@
         "type": "Transitive",
         "resolved": "10.0.3",
         "contentHash": "7nb5YzXuvWWJxB0J8DiyL3we+X4FOctZrt0fIBnucOIaIevFEEwGQVZKtiu9olXdlNAK1eNgqSral6r/jlhI4w=="
-      },
-      "ReactiveExtensionsSharp": {
-        "type": "Transitive",
-        "resolved": "0.3.0",
-        "contentHash": "7rF0x9AnfwuDl20ojNmGBK53Cqqr9aaxiCQ5MMnZHlhAiXZr8STN1IjTZJoA75GZVxv1ugz++UNphEy/bcSMMg=="
       },
       "System.CodeDom": {
         "type": "Transitive",
@@ -360,11 +339,6 @@
         "dependencies": {
           "System.CodeDom": "7.0.0"
         }
-      },
-      "WebDriverBiDi": {
-        "type": "Transitive",
-        "resolved": "0.0.61",
-        "contentHash": "UJGHt0DqU2nNHf8l12QvJZvj47dFb0VUcKsY6KTn+Cm6tlwXfcmkftfsED9ce+KJCmx4ZgvcaBZjWlae3GKunw=="
       }
     }
   }

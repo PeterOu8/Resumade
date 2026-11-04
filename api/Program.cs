@@ -7,7 +7,6 @@ using Microsoft.OpenApi;
 using Resumade.Api.Data;
 using Resumade.Api.Services.Auth;
 using Resumade.Api.Services.AI;
-using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Resume;
 using Scalar.AspNetCore;
@@ -62,7 +61,6 @@ builder.Services.AddRateLimiter(options =>
     };
 
     options.AddPolicy("auth", httpContext => FixedWindowPerIp(httpContext, 5, TimeSpan.FromMinutes(1)));
-    options.AddPolicy("pdf", httpContext => FixedWindowPerIp(httpContext, 3, TimeSpan.FromMinutes(1)));
     options.AddPolicy("parse", httpContext => FixedWindowPerIp(httpContext, 20, TimeSpan.FromMinutes(1)));
     options.AddPolicy("ai", httpContext => FixedWindowPerIp(httpContext, 10, TimeSpan.FromMinutes(1)));
 });
@@ -128,7 +126,6 @@ builder.Services.Configure<ResendClientOptions>(options =>
 builder.Services.AddTransient<IResend, ResendClient>();
 builder.Services.AddScoped<ResumeService>();
 builder.Services.AddScoped<ResumeParserService>();
-builder.Services.AddSingleton<ResumeGenerationService>();
 builder.Services.AddScoped<AiResumeService>();
 builder.Services.AddHttpClient<AiProviderService>(client =>
 {

@@ -7,7 +7,6 @@ using Resumade.Api.Dtos.Parsing;
 using Resumade.Api.Infrastructure.Validation;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Parsing.Pipeline;
-using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Resume;
 
 namespace Resumade.Api.Controllers
@@ -19,14 +18,11 @@ namespace Resumade.Api.Controllers
     {
         private readonly ResumeService _resumeService;
         private readonly ResumeParserService _resumeParserService;
-        private readonly ResumeGenerationService _resumeGenerationService;
 
-        public ResumesController(ResumeService resumeService, ResumeParserService resumeParserService,
-            ResumeGenerationService resumeGenerationService)
+        public ResumesController(ResumeService resumeService, ResumeParserService resumeParserService)
         {
             _resumeService = resumeService;
             _resumeParserService = resumeParserService;
-            _resumeGenerationService = resumeGenerationService;
         }
 
         private Guid GetUserId()
@@ -48,33 +44,6 @@ namespace Resumade.Api.Controllers
             var resume = await _resumeService.GetResumeByIdAsync(id, GetUserId());
             if (resume == null) return NotFound();
             return Ok(resume);
-        }
-
-        [AllowAnonymous]
-        [HttpPost("pdf")]
-        [EnableRateLimiting("pdf")]
-        [RequestSizeLimit(2_000_000)]
-        [Produces("application/pdf")]
-        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-        public async Task<IActionResult> DownloadDraftPdf(DownloadResumePdfDto preview, CancellationToken ct)
-        {
-            byte[] bytes;
-            try
-            {
-                bytes = await _resumeGenerationService.GenerateAsync(preview.Html, ct);
-            }
-            catch (ResumeGenerationBusyException)
-            {
-                Response.Headers.RetryAfter = "5";
-                return Problem(
-                    statusCode: StatusCodes.Status503ServiceUnavailable,
-                    title: "PDF service is busy",
-                    detail: "Try again in a few seconds.");
-            }
-
-            var title = string.Concat(preview.Title.Trim().Select(character =>
-                char.IsControl(character) || "<>:\"/\\|?*".Contains(character) ? '-' : character));
-            return File(bytes, "application/pdf", $"{title}.pdf");
         }
 
         [HttpPost]

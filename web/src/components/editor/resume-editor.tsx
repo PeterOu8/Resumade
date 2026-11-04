@@ -3,7 +3,6 @@
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { createPreviewHtml } from '@/lib/pdf/preview-html';
 import { deleteResume } from '@/lib/resume/delete-resume';
 import { saveResume } from '@/lib/resume/save-resume';
 import type { ResumeContent, ResumeDraft } from '@/lib/resume/resume.schema';
@@ -31,6 +30,7 @@ import { SortableList } from './sortable-list';
 import { usePreviewDivider } from './use-preview-divider';
 import { useResumeDocument } from './use-resume-document';
 import { useAiTailorResult } from './use-ai-tailor-result';
+import { usePdfDownload } from './use-pdf-download';
 
 const profileFields = [
   { key: 'fullName', label: 'Full name' },
@@ -77,7 +77,6 @@ export function ResumeEditor({
   const [tailorView, setTailorView] = useState<'tailor' | 'results'>('tailor');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [downloading, setDownloading] = useState(false);
   const [savedResumeId, setSavedResumeId] = useState(resumeId);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState('');
@@ -86,46 +85,16 @@ export function ResumeEditor({
   const { draft, sectionOrder } = document;
   const { workspaceRef, editorShare, divider } = usePreviewDivider();
   const { content } = draft;
+  const { downloading, downloadPdf } = usePdfDownload({
+    draft,
+    sectionOrder,
+    settings: document.settings,
+    disabled: busy,
+  });
 
-  async function downloadPdf() {
-    if (downloading || busy) return;
-    setDownloading(true);
+  async function handleDownload() {
     try {
-      const title = draft.title.trim() || content.profile.fullName.trim() || 'Resume';
-      const html = await createPreviewHtml(title, document.settings);
-      const response = await fetch('/api/resumes/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: title.slice(0, 200), html }),
-      });
-      if (response.status === 503) {
-        toast.add({
-          title: 'PDF service is busy',
-          description: 'Try the download again in a few seconds.',
-          type: 'warning',
-        });
-        return;
-      }
-
-      if (!response.ok) {
-        const result: unknown = await response.json().catch(() => null);
-        const message =
-          result &&
-          typeof result === 'object' &&
-          'error' in result &&
-          typeof result.error === 'string'
-            ? result.error
-            : 'Could not generate the PDF.';
-        throw new Error(message);
-      }
-
-      const pdf = await response.blob();
-      const url = URL.createObjectURL(pdf);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.download = `${title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').slice(0, 120)}.pdf`;
-      link.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      await downloadPdf();
     } catch (error) {
       toast.add({
         title: 'PDF could not be downloaded',
@@ -133,8 +102,6 @@ export function ResumeEditor({
           error instanceof Error ? error.message : 'Try again in a moment.',
         type: 'error',
       });
-    } finally {
-      setDownloading(false);
     }
   }
 
@@ -391,7 +358,7 @@ export function ResumeEditor({
         onSettingsChange={document.updateSettings}
         saveStatus={savedResumeId ? undefined : document.status}
         downloading={downloading}
-        onDownload={() => void downloadPdf()}
+        onDownload={() => void handleDownload()}
       />
       <ImportPdfDialog
         open={importOpen}
