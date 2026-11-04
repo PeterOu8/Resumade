@@ -28,6 +28,11 @@
   --color-focus: var(--focus);
   --color-primary-hover: var(--primary-hover);
   --color-backdrop: var(--backdrop);
+  --color-header: var(--header-surface);
+  --color-header-border: var(--header-border);
+  --color-logo: var(--logo-background);
+  --color-logo-foreground: var(--logo-foreground);
+  --color-logo-accent: var(--logo-accent);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
   --color-success-surface: var(--success-surface);
@@ -90,6 +95,8 @@
   --shadow-panel: var(--shadow-panel-value);
   --shadow-modal: var(--shadow-modal-value);
   --shadow-accent: var(--shadow-accent-value);
+  --shadow-header: var(--shadow-header-value);
+  --shadow-logo: var(--shadow-logo-value);
   --spacing-header: var(--header-height);
 }
 
@@ -116,6 +123,11 @@
   --surface-muted: #eef1f6;
   --focus: #95a9f0;
   --backdrop: #10182acc;
+  --header-surface: rgb(250 249 246 / 95%);
+  --header-border: #e5e8ef;
+  --logo-background: #1d273b;
+  --logo-foreground: #ffffff;
+  --logo-accent: #aebeff;
   --primary: #3558c8;
   --primary-hover: #2847a9;
   --primary-foreground: #ffffff;
@@ -165,6 +177,8 @@
   --shadow-panel-value: 0 18px 50px rgb(39 53 96 / 5%), 0 2px 10px rgb(39 53 96 / 3%);
   --shadow-modal-value: 0 28px 90px rgb(13 20 39 / 33%);
   --shadow-accent-value: 0 8px 22px rgb(53 88 200 / 18%);
+  --shadow-header-value: 0 1px 0 rgb(39 53 96 / 2%);
+  --shadow-logo-value: 0 4px 12px rgb(29 39 59 / 14%);
   --header-height: 4.5rem;
   --layer-header: 50;
   --layer-dialog: 100;
@@ -184,10 +198,10 @@
   :root:not(.light):not([data-theme='light']) {
     color-scheme: dark;
     --canvas: #0b101d;
-    --surface: rgb(255 255 255 / 0.06);
-    --surface-subtle: rgb(255 255 255 / 0.04);
-    --surface-raised: rgb(255 255 255 / 0.09);
-    --surface-hover: rgb(255 255 255 / 0.1);
+    --surface: #151c30;
+    --surface-subtle: #11192b;
+    --surface-raised: #1a2339;
+    --surface-hover: #222d49;
     --foreground: #f2f5ff;
     --foreground-strong: #ffffff;
     --foreground-muted: #c2cde2;
@@ -204,6 +218,13 @@
     --popover: #1a2238;
     --focus: #aabfff;
     --backdrop: rgb(4 7 16 / 0.68);
+    --header-surface: rgb(17 25 43 / 96%);
+    --header-border: rgb(149 173 255 / 0.18);
+    --logo-background: #95adff;
+    --logo-foreground: #0b101d;
+    --logo-accent: #3558c8;
+    --shadow-header-value: 0 10px 30px rgb(3 7 17 / 24%);
+    --shadow-logo-value: 0 6px 18px rgb(3 7 17 / 32%);
     --primary: #95adff;
     --primary-hover: #aebfff;
     --primary-foreground: #0b101d;
@@ -232,10 +253,10 @@
 [data-theme='dark'] {
   color-scheme: dark;
   --canvas: #0b101d;
-  --surface: rgb(255 255 255 / 0.06);
-  --surface-subtle: rgb(255 255 255 / 0.04);
-  --surface-raised: rgb(255 255 255 / 0.09);
-  --surface-hover: rgb(255 255 255 / 0.1);
+  --surface: #151c30;
+  --surface-subtle: #11192b;
+  --surface-raised: #1a2339;
+  --surface-hover: #222d49;
   --foreground: #f2f5ff;
   --foreground-strong: #ffffff;
   --foreground-muted: #c2cde2;
@@ -252,6 +273,13 @@
   --popover: #1a2238;
   --focus: #aabfff;
   --backdrop: rgb(4 7 16 / 0.68);
+  --header-surface: rgb(17 25 43 / 96%);
+  --header-border: rgb(149 173 255 / 0.18);
+  --logo-background: #95adff;
+  --logo-foreground: #0b101d;
+  --logo-accent: #3558c8;
+  --shadow-header-value: 0 10px 30px rgb(3 7 17 / 24%);
+  --shadow-logo-value: 0 6px 18px rgb(3 7 17 / 32%);
   --primary: #95adff;
   --primary-hover: #aebfff;
   --primary-foreground: #0b101d;

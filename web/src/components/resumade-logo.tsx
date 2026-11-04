@@ -9,9 +9,9 @@ export function ResumadeLogo() {
     >
       <span
         aria-hidden="true"
-        className="flex size-9 items-center justify-center rounded-[10px] bg-[#1d273b] pb-1 font-['EB_Garamond',Georgia,serif] text-[29px] leading-none font-bold text-white shadow-[0_4px_12px_#1d273b24] sm:size-10"
+        className="flex size-9 items-center justify-center rounded-control bg-logo pb-1 font-display text-[29px] leading-none font-bold text-logo-foreground shadow-logo sm:size-10"
       >
-        R<span className="text-[#aebeff]">.</span>
+        R<span className="text-logo-accent">.</span>
       </span>
       <span className="hidden text-base font-semibold tracking-[-0.04em] text-foreground min-[390px]:inline sm:text-xl">
         Resumade

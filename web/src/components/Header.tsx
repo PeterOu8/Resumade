@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { Suspense } from 'react';
 
 import { auth, signOut } from '@/auth';
@@ -9,6 +10,7 @@ const accountButtonClass =
   'inline-flex h-9 items-center justify-center whitespace-nowrap rounded-control border border-border-strong bg-surface px-3 text-xs font-semibold text-foreground-strong transition-colors hover:bg-surface-hover focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus sm:h-10 sm:px-4 sm:text-sm';
 
 async function AccountNavigation() {
+  await connection();
   const session = await auth();
   const signedIn = Boolean(session?.user);
 
@@ -43,8 +45,8 @@ async function AccountNavigation() {
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border-subtle bg-canvas/95 backdrop-blur-md print:hidden">
-      <nav className="mx-auto flex h-header max-w-[1500px] items-center justify-between gap-2 px-4 sm:gap-3 sm:px-7">
+    <header className="sticky top-0 z-50 w-full border-b border-header-border bg-header shadow-header backdrop-blur-md print:hidden">
+      <nav aria-label="Primary" className="mx-auto flex h-header max-w-[1500px] items-center justify-between gap-2 px-4 sm:gap-3 sm:px-7">
         <ResumadeLogo />
         <Suspense>
           <AccountNavigation />
