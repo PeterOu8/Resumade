@@ -23,6 +23,7 @@ import {
 } from '@/components/editor/preview/constants';
 
 const mm = (value: number) => (value * 72) / 25.4;
+export const classicEmphasisWeight = 600;
 
 const baseStyles = StyleSheet.create({
   page: { backgroundColor: '#ffffff' },
@@ -45,13 +46,14 @@ const baseStyles = StyleSheet.create({
   bulletBody: { flexGrow: 1, flexBasis: 0 },
   blockquote: { paddingLeft: 8, borderLeftWidth: 1 },
   link: { textDecoration: 'underline' },
-  classicName: { fontSize: 18 },
+  classicName: { fontSize: 18, fontWeight: classicEmphasisWeight },
   classicProfile: { paddingBottom: 0, borderBottomWidth: 0 },
   classicRole: { marginTop: 0, fontSize: 10 },
   classicContacts: { marginTop: 0, columnGap: 0, rowGap: 0, fontSize: 10 },
-  classicSectionTitle: { marginBottom: 3, borderBottomWidth: 0.7, fontSize: 11, textTransform: 'uppercase' },
+  classicSectionTitle: { marginBottom: 3, borderBottomWidth: 0.7, fontSize: 11, fontWeight: classicEmphasisWeight, textTransform: 'uppercase' },
+  classicEntryTitle: { fontWeight: classicEmphasisWeight },
   classicDetail: { fontSize: 10 },
-  classicDates: { fontSize: 10, fontWeight: 700 },
+  classicDates: { fontSize: 10, fontWeight: classicEmphasisWeight },
   classicLink: { color: '#0000ee', textDecoration: 'none' },
 });
 
@@ -106,7 +108,7 @@ function safeLink(value: string) {
   }
 }
 
-function inlineNodes(nodes: ChildNode[], keyPrefix: string): ReactNode[] {
+function inlineNodes(nodes: ChildNode[], keyPrefix: string, boldWeight: number): ReactNode[] {
   return nodes.flatMap((node, index): ReactNode[] => {
     const key = `${keyPrefix}-${index}`;
     if (node.type === 'text') return [(node as DomText).data];
@@ -114,9 +116,9 @@ function inlineNodes(nodes: ChildNode[], keyPrefix: string): ReactNode[] {
     const element = node as Element;
     if (['script', 'style', 'template', 'svg', 'math'].includes(element.name)) return [];
     if (element.name === 'br') return ['\n'];
-    const children = inlineNodes(element.children, key);
+    const children = inlineNodes(element.children, key, boldWeight);
     const inlineStyle: Styles[string] = {};
-    if (element.name === 'strong' || element.name === 'b') inlineStyle.fontWeight = 700;
+    if (element.name === 'strong' || element.name === 'b') inlineStyle.fontWeight = boldWeight;
     if (element.name === 'em' || element.name === 'i') inlineStyle.fontStyle = 'italic';
     if (element.name === 'u') inlineStyle.textDecoration = 'underline';
     if (element.name === 's') inlineStyle.textDecoration = 'line-through';
@@ -128,7 +130,7 @@ function inlineNodes(nodes: ChildNode[], keyPrefix: string): ReactNode[] {
   });
 }
 
-function richBlocks(value: string, accent: string) {
+function richBlocks(value: string, accent: string, boldWeight: number) {
   const document = parseDocument(value, { decodeEntities: true });
   const blocks: ReactElement[] = [];
   document.children.forEach((node, index) => {
@@ -145,7 +147,7 @@ function richBlocks(value: string, accent: string) {
         blocks.push(
           <View key={`${index}-${itemIndex}`} style={[baseStyles.bullet, itemIndex > 0 ? { marginTop: 2 } : undefined]} wrap={false}>
             <Text style={baseStyles.bulletMarker}>{element.name === 'ol' ? `${start + itemIndex}.` : '•'}</Text>
-            <Text style={baseStyles.bulletBody}>{inlineNodes(item.children, `${index}-${itemIndex}`)}</Text>
+            <Text style={baseStyles.bulletBody}>{inlineNodes(item.children, `${index}-${itemIndex}`, boldWeight)}</Text>
           </View>,
         );
       });
@@ -164,18 +166,18 @@ function richBlocks(value: string, accent: string) {
           element.name === 'pre' ? { fontFamily: 'Courier' } : undefined,
         ]}
       >
-        {inlineNodes(element.children, String(index))}
+        {inlineNodes(element.children, String(index), boldWeight)}
       </Text>,
     );
   });
   return blocks;
 }
 
-function PdfText({ value, accent }: { value: string; accent: string }) {
+function PdfText({ value, accent, boldWeight = 700 }: { value: string; accent: string; boldWeight?: number }) {
   if (!/^<(p|ul|ol|h[1-6]|blockquote|pre|hr)(?=[\s/>])/i.test(value.trim())) {
     return <Text>{value}</Text>;
   }
-  return <View>{richBlocks(value, accent)}</View>;
+  return <View>{richBlocks(value, accent, boldWeight)}</View>;
 }
 
 function Contact({ value, protocol = '', classic = false }: { value: string; protocol?: string; classic?: boolean }) {
@@ -231,12 +233,13 @@ function Profile({ profile, settings, options }: { profile: ResumeContent['profi
 
 function BulletList({ items, rich, context }: { items: string[]; rich?: boolean; context: Context }) {
   const visible = items.filter((item) => item.trim());
+  const boldWeight = context.settings.style === 'classic' ? classicEmphasisWeight : 700;
   return visible.length ? (
     <View style={baseStyles.bullets}>
       {visible.map((item, index) => (
         <View key={index} style={[baseStyles.bullet, index > 0 ? { marginTop: 2 } : undefined]} wrap={false}>
           <Text style={baseStyles.bulletMarker}>•</Text>
-          <View style={baseStyles.bulletBody}>{rich ? <PdfText value={item} accent={context.settings.theme.accent} /> : <Text>{item}</Text>}</View>
+          <View style={baseStyles.bulletBody}>{rich ? <PdfText value={item} accent={context.settings.theme.accent} boldWeight={boldWeight} /> : <Text>{item}</Text>}</View>
         </View>
       ))}
     </View>
@@ -254,13 +257,13 @@ function Entry({ title, titleHref, detail, dates, description, bullets, richBull
       {(title?.trim() || dates) && (
         <View style={baseStyles.entryHeading} wrap={false}>
           {title?.trim() && (href
-            ? <Link src={href} style={[baseStyles.entryTitle, classic ? baseStyles.classicLink : undefined]}>{title}</Link>
-            : <Text style={baseStyles.entryTitle}>{title}</Text>)}
+            ? <Link src={href} style={[baseStyles.entryTitle, classic ? [baseStyles.classicEntryTitle, baseStyles.classicLink] : undefined]}>{title}</Link>
+            : <Text style={[baseStyles.entryTitle, classic ? baseStyles.classicEntryTitle : undefined]}>{title}</Text>)}
           {dates && <Text style={[baseStyles.dates, classic ? baseStyles.classicDates : undefined]}>{dates}</Text>}
         </View>
       )}
       {detail?.trim() && <Text style={[baseStyles.detail, classic ? baseStyles.classicDetail : undefined]}>{detail}</Text>}
-      {description?.trim() && <PdfText value={description} accent={context.settings.theme.accent} />}
+      {description?.trim() && <PdfText value={description} accent={context.settings.theme.accent} boldWeight={classic ? classicEmphasisWeight : 700} />}
       {bullets && <BulletList items={bullets} rich={richBullets} context={context} />}
       {children}
     </View>
@@ -289,10 +292,10 @@ function Section({ title, children, context }: { title: string; children: ReactN
 
 function ResumeSections({ resume, sectionOrder, context }: { resume: ResumeContent; sectionOrder: readonly SectionKey[]; context: Context }) {
   const renderers: Record<Exclude<SectionKey, 'additionalSections'>, () => ReactNode[]> = {
-    summary: () => resume.summary.trim() ? [<PdfText key="summary" value={resume.summary} accent={context.settings.theme.accent} />] : [],
+    summary: () => resume.summary.trim() ? [<PdfText key="summary" value={resume.summary} accent={context.settings.theme.accent} boldWeight={context.settings.style === 'classic' ? classicEmphasisWeight : 700} />] : [],
     keySkills: () => resume.keySkills.filter(({ category, items }) => category.trim() || items.some((item) => item.trim())).map(({ category, items }, index) => (
       <Text key={index} style={index > 0 ? { marginTop: 2 } : undefined}>
-        {category.trim() && <Text style={{ fontWeight: 700 }}>{category}{items.some((item) => item.trim()) ? ': ' : ''}</Text>}
+        {category.trim() && <Text style={{ fontWeight: context.settings.style === 'classic' ? classicEmphasisWeight : 700 }}>{category}{items.some((item) => item.trim()) ? ': ' : ''}</Text>}
         {items.filter((item) => item.trim()).join(', ')}
       </Text>
     )),
@@ -342,6 +345,7 @@ export function registerResumePdfFonts(baseUrl = '') {
     family: 'EB Garamond',
     fonts: [
       { src: `${baseUrl}/fonts/eb-garamond-400.woff`, fontWeight: 400 },
+      { src: `${baseUrl}/fonts/eb-garamond-600.woff`, fontWeight: classicEmphasisWeight },
       { src: `${baseUrl}/fonts/eb-garamond-700.woff`, fontWeight: 700 },
     ],
   });

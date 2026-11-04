@@ -5,7 +5,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 import { defaultPreviewSettings, defaultSectionOrder, type PreviewSettings } from '@/components/editor/preview/constants';
 import { createEmptyResumeDraft } from '@/lib/resume/resume.schema';
-import { pdfFileName, registerResumePdfFonts, ResumePdfDocument } from './resume-pdf';
+import { classicEmphasisWeight, pdfFileName, registerResumePdfFonts, ResumePdfDocument } from './resume-pdf';
 
 registerResumePdfFonts(path.resolve(process.cwd(), 'public'));
 
@@ -50,6 +50,10 @@ async function readPdf(settings: PreviewSettings) {
 }
 
 describe('frontend resume PDF', () => {
+  it('uses semibold emphasis for the Classic template', () => {
+    expect(classicEmphasisWeight).toBe(600);
+  });
+
   it.each(['classic', 'modern', 'custom'] as const)('renders the %s style as a selectable PDF', async (style) => {
     const result = await readPdf({ ...defaultPreviewSettings, style });
 
