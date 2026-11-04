@@ -41,6 +41,12 @@ Tokens use HMAC-SHA256 and expire one hour after issuance. Protected requests mu
 
 Registration returns `409` for an already registered email. Sign-in returns `401` for invalid credentials or a rejected Google ID token. Invalid request DTOs return `400`. The web app manages sign-out through Auth.js.
 
+After five incorrect password attempts, password sign-in is locked for that account for 15 minutes. Locked accounts receive the same `401` response as other invalid sign-in attempts.
+
+## Request limits
+
+The API applies one-minute limits per client IP. The auth routes share a limit of 5 requests, PDF export allows 3, PDF parsing allows 20, and the AI routes share a limit of 10. Requests over a limit receive `429` and a `Retry-After` header. Behind a reverse proxy, configure the immediate proxy as trusted so the limiter can use the forwarded client IP. See [local API configuration](development.md#start-the-api).
+
 ## Saved resumes
 
 Saved-resume operations require a bearer token. The authenticated user's ID comes from the token. PDF export is available to guests.

@@ -1,0 +1,92 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+      - 'tests/**'
+      - 'Resumade.Api.slnx'
+      - '.github/**'
+      - '.gitignore'
+      - 'Directory.Build.*'
+      - 'Directory.Packages.props'
+      - 'global.json'
+      - '[Nn]u[Gg]et.[Cc]onfig'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      # HEAD is GitHub's PR merge commit and its first parent is the base commit.
+      - name: Check PR paths
+        id: scope
+        if: github.event_name == 'pull_request'
+        run: |
+          changed=$(git diff --name-only --no-renames HEAD^1 HEAD -- \
+            api tests Resumade.Api.slnx .github .gitignore \
+            'Directory.Build.*' Directory.Packages.props global.json ':(icase)nuget.config')
+          if [[ -z "$changed" ]]; then
+            echo 'No backend or shared CI changes.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up .NET
+        if: steps.scope.outputs.skip != 'true'
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: |
+            api/packages.lock.json
+            tests/Resumade.Api.Tests/packages.lock.json
+
+      - name: Restore dependencies
+        if: steps.scope.outputs.skip != 'true'
+        run: dotnet restore Resumade.Api.slnx --locked-mode
+
+      - name: Build in Release
+        if: steps.scope.outputs.skip != 'true'
+        run: dotnet build Resumade.Api.slnx --configuration Release --no-restore
+
+      - name: Run tests in Release
+        id: tests
+        if: steps.scope.outputs.skip != 'true'
+        env:
+          # The default test host needs these settings at startup.
+          Jwt__Key: resumade-ci-signing-key-for-tests-only
+          ConnectionStrings__ResumadeDatabase: Host=127.0.0.1;Database=unused
+        run: |
+          # Use the runner image's system Chrome with sandboxing enabled.
+          PUPPETEER_EXECUTABLE_PATH=$(command -v google-chrome)
+          export PUPPETEER_EXECUTABLE_PATH
+          "$PUPPETEER_EXECUTABLE_PATH" --version
+          dotnet test Resumade.Api.slnx --configuration Release --no-build \
+            --results-directory TestResults --logger 'trx;LogFileName=backend-tests.trx'
+
+      - name: Upload test results
+        if: ${{ !cancelled() && (steps.tests.outcome == 'success' || steps.tests.outcome == 'failure') }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-test-results
+          path: TestResults/*.trx
+          retention-days: 7

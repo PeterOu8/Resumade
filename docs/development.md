@@ -56,17 +56,50 @@ For Google sign-in, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `web/.env.l
 
 To run the HTTPS profile, use `dotnet dev-certs https --trust`, start the API with `--launch-profile https`, and set `API_URL=https://localhost:7131`. If Node needs the local CA, set `NODE_EXTRA_CA_CERTS` to the public certificate PEM before starting the web process.
 
-## Run checks
+## Continuous integration
+
+GitHub Actions runs **Frontend CI** and **Backend CI** on Ubuntu. Both workflows report a check on pull requests targeting `main`. Each compares the PR merge commit to its base and skips the expensive steps when the changes are outside its scope. Pushes to `main` start only the workflows that match their path filters. Changes under `.github/` or to the root `.gitignore` are in scope for both. Once the workflows are on the default branch, use **Actions → Run workflow** to run either suite in full.
+
+### Frontend checks
+
+Changes under `web/` or to the root `.npmrc` run these checks. CI uses Node.js 24 and caches npm downloads using `web/package-lock.json`. Run the same commands from the repository root in PowerShell.
 
 ```powershell
-# Repository root, with the API environment variables above
-dotnet test Resumade.Api.slnx
-
-# web/
+Set-Location web
+npm ci
 npm run lint
-npx tsc --noEmit
+npm exec -- next typegen
+npm exec -- tsc --noEmit
+npm run build
 ```
 
-The API integration suite checks health and anonymous PDF generation. PDF generation launches Chromium. If downloads are unavailable in your test environment, set `PUPPETEER_EXECUTABLE_PATH` before running the suite.
+The Next.js build fetches Geist fonts from Google Fonts. Auth.js and API settings are for runtime use.
+
+### Backend checks
+
+Changes under `api/` or `tests/`, to `Resumade.Api.slnx`, or to root .NET and NuGet build configuration run these checks. CI uses .NET SDK 10, caches NuGet packages using both project lockfiles, and uploads xUnit's TRX results for seven days. PDF tests use the runner's Google Chrome with its sandbox enabled. The suite needs a placeholder connection string for API startup and runs without a PostgreSQL service.
+
+Run from the repository root in a fresh PowerShell session. Set the browser path to your local Chrome or Chromium executable, or let PuppeteerSharp download one on first use.
+
+```powershell
+dotnet restore Resumade.Api.slnx --locked-mode
+dotnet build Resumade.Api.slnx --configuration Release --no-restore
+
+$env:Jwt__Key = 'resumade-ci-signing-key-for-tests-only'
+$env:ConnectionStrings__ResumadeDatabase = 'Host=127.0.0.1;Database=unused'
+# $env:PUPPETEER_EXECUTABLE_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
+dotnet test Resumade.Api.slnx --configuration Release --no-build --results-directory "$env:TEMP/resumade-test-results" --logger 'trx;LogFileName=backend-tests.trx'
+```
+
+After changing NuGet dependencies, run `dotnet restore Resumade.Api.slnx --force-evaluate` and commit any updated `packages.lock.json` files with the project changes.
+
+### GitHub settings and branch protection
+
+1. In **Settings → Actions → General**, enable GitHub Actions and allow GitHub-authored actions if the repository restricts which actions can run. Use the read-only default workflow permissions. CI requires no repository secrets.
+2. After both checks have succeeded on a PR, create a branch protection rule or ruleset for `main`. Require a pull request and require the GitHub Actions checks **Frontend checks** and **Backend checks**. Both jobs report on every eligible PR because filtering happens inside the job. Workflow-level PR path filters can leave a required check pending. [GitHub's required status check documentation](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks#handling-skipped-but-required-checks)
+
+### Future Azure Container Apps deployment
+
+A separate deployment workflow can gate releases on a successful backend CI run for the same commit on protected `main`. It can then publish a commit-tagged image to Azure Container Registry and deploy that image as a Container Apps revision. Use a protected GitHub environment and Azure workload identity federation for short-lived credentials. [Azure Container Apps deployment](https://learn.microsoft.com/en-us/azure/container-apps/github-actions) and [GitHub Actions OIDC for Azure](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure)
 
 See the [API reference](api.md) for endpoint contracts and the [page gallery](screenshots.md) for the main flows.

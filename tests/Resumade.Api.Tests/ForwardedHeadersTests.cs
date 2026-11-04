@@ -17,10 +17,10 @@ public sealed class ForwardedHeadersTests
         using var client = factory.CreateClient();
 
         for (var requestNumber = 0; requestNumber < 5; requestNumber++)
-            Assert.NotEqual(HttpStatusCode.TooManyRequests, await SignIn(client, "203.0.113.1"));
+            Assert.Equal(HttpStatusCode.BadRequest, await SignIn(client, "203.0.113.1"));
 
         for (var requestNumber = 0; requestNumber < 5; requestNumber++)
-            Assert.NotEqual(HttpStatusCode.TooManyRequests, await SignIn(client, "203.0.113.2"));
+            Assert.Equal(HttpStatusCode.BadRequest, await SignIn(client, "203.0.113.2"));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public sealed class ForwardedHeadersTests
         using var client = factory.CreateClient();
 
         for (var requestNumber = 0; requestNumber < 5; requestNumber++)
-            Assert.NotEqual(HttpStatusCode.TooManyRequests, await SignIn(client, $"203.0.113.{requestNumber + 1}"));
+            Assert.Equal(HttpStatusCode.BadRequest, await SignIn(client, $"203.0.113.{requestNumber + 1}"));
 
         Assert.Equal(HttpStatusCode.TooManyRequests, await SignIn(client, "203.0.113.100"));
     }
@@ -51,7 +51,8 @@ public sealed class ForwardedHeadersTests
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/signin")
         {
-            Content = JsonContent.Create(new { Email = "invalid@example.test", Password = "invalid-password" })
+            // Admitted requests stop at model validation before the database lookup.
+            Content = JsonContent.Create(new { Email = "invalid@example.test" })
         };
         request.Headers.Add("X-Forwarded-For", forwardedFor);
         using var response = await client.SendAsync(request);

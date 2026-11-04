@@ -2,6 +2,8 @@
 
 Resumade is a web app for building and revising resumes. Start from a template or import an existing PDF, edit each section alongside a live preview, and download a PDF with selectable text.
 
+**[Open the live frontend](https://resumade-zeta.vercel.app)** · [Explore the screenshots](docs/screenshots.md) · [Run it locally](docs/development.md)
+
 ![Resumade landing page with an illustration of the editor and live resume preview](docs/screenshots/landing.png)
 
 ## What you can do
@@ -16,13 +18,17 @@ Resumade is a web app for building and revising resumes. Start from a template o
 
 [See the page gallery](docs/screenshots.md) for the start flow, templates, account pages, and dashboard. Screenshots use fictional resume data.
 
-## For developers
+## Architecture and engineering
 
 | Part | Stack |
 | --- | --- |
 | [Web app](web/) | Next.js, React, TypeScript, Tailwind CSS, and Auth.js |
 | [API](api/) | ASP.NET Core 10, EF Core, PostgreSQL, and JWT bearer authentication |
 | PDF workflow | PDF.js extracts text in the browser. The API parses it and uses PuppeteerSharp with Chromium to export the styled preview. |
-| [API tests](tests/Resumade.Api.Tests/) | xUnit integration tests for health and guest PDF export |
+| [API tests](tests/Resumade.Api.Tests/) | xUnit tests for health, CORS, rate limiting, AI response validation, and guest PDF export |
 
-[Run Resumade locally](docs/development.md) · [Read the API reference](docs/api.md)
+- **Guest editing and account storage.** Guests can edit a draft and request a PDF export. Auth.js manages web sessions, and the API validates JWTs for access to resumes stored in PostgreSQL.
+- **PDF import and export.** The browser extracts text and layout metadata from uploaded PDFs. The API turns those items into editable sections and renders exports in sandboxed Chromium with scripts and external requests blocked.
+- **Continuous integration.** Separate GitHub Actions workflows run frontend linting, type checks, and a production build, plus a Release build and the backend test suite. Each PR reports both checks and runs validation for the parts it changes.
+
+[Development and CI guide](docs/development.md) · [API reference](docs/api.md)
