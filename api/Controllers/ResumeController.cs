@@ -58,7 +58,20 @@ namespace Resumade.Api.Controllers
         [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> DownloadDraftPdf(DownloadResumePdfDto preview, CancellationToken ct)
         {
-            var bytes = await _resumeGenerationService.GenerateAsync(preview.Html, ct);
+            byte[] bytes;
+            try
+            {
+                bytes = await _resumeGenerationService.GenerateAsync(preview.Html, ct);
+            }
+            catch (ResumeGenerationBusyException)
+            {
+                Response.Headers.RetryAfter = "5";
+                return Problem(
+                    statusCode: StatusCodes.Status503ServiceUnavailable,
+                    title: "PDF service is busy",
+                    detail: "Try again in a few seconds.");
+            }
+
             var title = string.Concat(preview.Title.Trim().Select(character =>
                 char.IsControl(character) || "<>:\"/\\|?*".Contains(character) ? '-' : character));
             return File(bytes, "application/pdf", $"{title}.pdf");

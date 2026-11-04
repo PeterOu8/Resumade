@@ -33,6 +33,16 @@ export async function POST(request: Request) {
     });
 
     if (!response.ok) {
+      if (response.status === 503) {
+        return Response.json(
+          { error: 'The PDF service is busy. Try again in a few seconds.' },
+          {
+            status: 503,
+            headers: { 'Retry-After': response.headers.get('retry-after') ?? '5' },
+          },
+        );
+      }
+
       return Response.json(
         { error: response.status === 400 ? 'Check the resume details and try again.' : 'PDF generation is unavailable.' },
         { status: response.status === 400 ? 400 : 502 },

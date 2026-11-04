@@ -5,7 +5,7 @@ export const signinSchema = z.object({
     .email('Invalid email')
     .min(1, { message: 'Email is required' })
     .max(50, { message: 'Maximum 50 characters' }),
-  password: z.string().min(6).max(128),
+  password: z.string().min(8).max(128),
 });
 
 export const signinResponseSchema = z.object({

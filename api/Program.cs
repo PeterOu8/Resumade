@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,6 +12,7 @@ using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Resume;
 using Scalar.AspNetCore;
 using System.Globalization;
+using System.Net;
 using System.Threading.RateLimiting;
 using System.Text;
 
@@ -21,6 +23,28 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+var knownProxyAddresses = builder.Configuration
+    .GetSection("Proxy:KnownProxies")
+    .Get<string[]>()
+    ?? [];
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    options.KnownProxies.Clear();
+    options.KnownIPNetworks.Clear();
+
+    foreach (var address in knownProxyAddresses)
+    {
+        if (!IPAddress.TryParse(address, out var proxyAddress))
+            throw new InvalidOperationException($"Proxy:KnownProxies contains an invalid IP address: '{address}'.");
+
+        options.KnownProxies.Add(proxyAddress);
+    }
+});
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -40,11 +64,32 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("parse", httpContext => FixedWindowPerIp(httpContext, 20, TimeSpan.FromMinutes(1)));
     options.AddPolicy("ai", httpContext => FixedWindowPerIp(httpContext, 10, TimeSpan.FromMinutes(1)));
 });
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?? [];
+
+if (allowedOrigins.Length == 0)
+    throw new InvalidOperationException("Cors:AllowedOrigins must contain at least one frontend origin.");
+
+foreach (var origin in allowedOrigins)
+{
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
+        uri.Scheme is not ("http" or "https") ||
+        !string.IsNullOrEmpty(uri.PathAndQuery) && uri.PathAndQuery != "/" ||
+        !string.IsNullOrEmpty(uri.Fragment) ||
+        !string.IsNullOrEmpty(uri.UserInfo))
+    {
+        throw new InvalidOperationException(
+            $"Cors:AllowedOrigins contains an invalid origin: '{origin}'.");
+    }
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -111,6 +156,7 @@ builder.Services.AddDbContext<ResumadeDbContext>(options =>
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("Frontend");
@@ -133,9 +179,7 @@ static RateLimitPartition<string> FixedWindowPerIp(
     int permitLimit,
     TimeSpan window)
 {
-    // RemoteIpAddress is populated by Kestrel. Deployments behind a proxy should
-    // configure trusted ForwardedHeaders known proxies/networks rather than trust
-    // arbitrary X-Forwarded-For values supplied by clients.
+    // Forwarded headers replace this value only when the immediate proxy is trusted.
     var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
     {

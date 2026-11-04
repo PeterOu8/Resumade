@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Hosting;
 using Xunit;
 
 namespace Resumade.Api.Tests;
@@ -55,5 +56,30 @@ public sealed class HealthControllerTests(
 
         Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
         Assert.NotNull(rejected.Headers.RetryAfter);
+    }
+
+    [Theory]
+    [InlineData("https://resumade-zeta.vercel.app", true)]
+    [InlineData("https://untrusted.example", false)]
+    public async Task Cors_OnlyAllowsConfiguredProductionOrigin(string origin, bool expectedAllowed)
+    {
+        await using var application = new WebApplicationFactory<Program>();
+        await using var productionFactory = application.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Production");
+            builder.UseSetting("Jwt:Key", "resumade-cors-test-key-with-at-least-32-characters");
+            builder.UseSetting("ConnectionStrings:ResumadeDatabase", "Host=localhost;Database=unused");
+        });
+        using var client = productionFactory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/health");
+        request.Headers.Add("Origin", origin);
+
+        using var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var allowedOrigin = response.Headers.TryGetValues("Access-Control-Allow-Origin", out var values)
+            ? values.SingleOrDefault()
+            : null;
+        Assert.Equal(expectedAllowed ? origin : null, allowedOrigin);
     }
 }

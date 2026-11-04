@@ -16,6 +16,10 @@ Set the database connection and a local JWT signing key of at least 32 ASCII cha
 ```powershell
 $env:ConnectionStrings__ResumadeDatabase = 'Host=localhost;Port=5432;Database=resumade;Username=<local-user>;Password=<local-password>'
 $env:Jwt__Key = '<replace-with-a-random-local-signing-key-of-at-least-32-characters>'
+# Override the allowed browser frontend origins as needed. Array indexes use __0, __1, and so on.
+# $env:Cors__AllowedOrigins__0 = 'https://resumade-zeta.vercel.app'
+# In production, add the IP of the reverse proxy directly in front of the API.
+# $env:Proxy__KnownProxies__0 = '10.0.0.10'
 # Optional. Point PuppeteerSharp at a locally installed browser.
 # $env:PUPPETEER_EXECUTABLE_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 

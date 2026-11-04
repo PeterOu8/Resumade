@@ -15,7 +15,19 @@ public sealed class ResumeGenerationService : IAsyncDisposable
 
     private readonly object _browserLock = new();
     private Task<IBrowser>? _browser;
-    private readonly SemaphoreSlim _renderSlots = new(2, 2);
+    private readonly SemaphoreSlim _renderSlots;
+    private readonly bool _renderingDisabled;
+
+    public ResumeGenerationService(IConfiguration configuration)
+    {
+        var maxConcurrentRenders = configuration.GetValue("Pdf:MaxConcurrentRenders", 2);
+        if (maxConcurrentRenders is < 0 or > 10)
+            throw new InvalidOperationException("Pdf:MaxConcurrentRenders must be between 0 and 10.");
+
+        _renderingDisabled = maxConcurrentRenders == 0;
+        var slotCount = Math.Max(1, maxConcurrentRenders);
+        _renderSlots = new SemaphoreSlim(slotCount, slotCount);
+    }
 
     private Task<IBrowser> GetBrowserAsync()
     {
@@ -63,7 +75,8 @@ public sealed class ResumeGenerationService : IAsyncDisposable
         string html,
         CancellationToken ct = default)
     {
-        await _renderSlots.WaitAsync(ct);
+        if (_renderingDisabled || !await _renderSlots.WaitAsync(TimeSpan.Zero, ct))
+            throw new ResumeGenerationBusyException();
 
         try
         {
@@ -126,5 +139,12 @@ public sealed class ResumeGenerationService : IAsyncDisposable
         }
 
         _renderSlots.Dispose();
+    }
+}
+
+public sealed class ResumeGenerationBusyException : Exception
+{
+    public ResumeGenerationBusyException() : base("The PDF renderer is busy.")
+    {
     }
 }

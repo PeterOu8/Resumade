@@ -98,6 +98,15 @@ export function ResumeEditor({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: title.slice(0, 200), html }),
       });
+      if (response.status === 503) {
+        toast.add({
+          title: 'PDF service is busy',
+          description: 'Try the download again in a few seconds.',
+          type: 'warning',
+        });
+        return;
+      }
+
       if (!response.ok) {
         const result: unknown = await response.json().catch(() => null);
         const message =

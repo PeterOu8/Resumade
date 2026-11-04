@@ -9,6 +9,28 @@ namespace Resumade.Api.Tests;
 public sealed class ResumePdfTests
 {
     [Fact]
+    public async Task DownloadDraftPdf_ReturnsServiceUnavailableWhenRendererIsBusy()
+    {
+        await using var application = new WebApplicationFactory<Program>();
+        await using var factory = application.WithWebHostBuilder(builder =>
+        {
+            builder.UseSetting("Jwt:Key", "resumade-pdf-test-key-with-at-least-32-characters");
+            builder.UseSetting("ConnectionStrings:ResumadeDatabase", "Host=localhost;Database=unused");
+            builder.UseSetting("Pdf:MaxConcurrentRenders", "0");
+        });
+        using var client = factory.CreateClient();
+
+        using var response = await client.PostAsJsonAsync("/api/resumes/pdf", new
+        {
+            Title = "Guest Resume",
+            Html = "<h1>Guest Candidate</h1>"
+        });
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(TimeSpan.FromSeconds(5), response.Headers.RetryAfter?.Delta);
+    }
+
+    [Fact]
     public async Task DownloadDraftPdf_RendersAnonymousPreview()
     {
         await using var application = new WebApplicationFactory<Program>();
