@@ -139,8 +139,8 @@ jobs:
             --env Jwt__Key=container-smoke-test-key-at-least-32-characters \
             --env 'ConnectionStrings__ResumadeDatabase=Host=localhost;Database=unused' "$image")
           trap 'docker logs "$container"; docker rm --force "$container" >/dev/null' EXIT
-          if ! curl --fail --silent --show-error --retry 10 --retry-connrefused \
-            --retry-delay 1 http://127.0.0.1:18080/api/health; then
+          if ! curl --fail --silent --show-error --retry 10 --retry-all-errors \
+            --retry-delay 1 --max-time 4 http://127.0.0.1:18080/api/health; then
             echo "::error::The container did not pass its HTTP health check."
             exit 1
           fi
