@@ -41,29 +41,17 @@ async function EditorWithTemplate({
       initialDraft = { title, content };
     } catch (error) {
       if (error instanceof ResumeApiError && error.status === 404) notFound();
-      const expired = error instanceof ResumeApiError && error.status === 401;
+      if (error instanceof ResumeApiError && error.status === 401) redirect('/signin');
       return (
         <div
           role="alert"
           className="mx-auto max-w-2xl px-5 py-12 text-sm text-danger-foreground"
         >
-          {expired ? (
-            <>
-              Your account session has expired.{' '}
-              <Link className="underline" href="/signin">
-                Sign in again
-              </Link>
-              .
-            </>
-          ) : (
-            <>
-              Could not open this resume.{' '}
-              <Link className="underline" href="/dashboard">
-                Back to dashboard
-              </Link>
-              .
-            </>
-          )}
+          Could not open this resume.{' '}
+          <Link className="underline" href="/dashboard">
+            Back to dashboard
+          </Link>
+          .
         </div>
       );
     }

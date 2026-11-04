@@ -2,6 +2,7 @@ import 'server-only';
 
 import { headers } from 'next/headers';
 import { getToken } from 'next-auth/jwt';
+import { isCurrentApiToken } from '@/lib/auth/api-token';
 import { z } from 'zod';
 
 import { savedResumeSchema, type ResumeDraft } from './resume.schema';
@@ -23,7 +24,7 @@ async function requestResumes(path = '', options?: RequestInit) {
     secret,
     secureCookie: /(?:^|;\s*)__Secure-authjs\.session-token(?:\.\d+)?=/.test(cookie),
   });
-  if (!token?.apiToken || !token.apiUserId) throw new ResumeApiError(401);
+  if (!token?.apiToken || !token.apiUserId || !isCurrentApiToken(token.apiToken)) throw new ResumeApiError(401);
 
   const response = await fetch(new URL(`/api/resumes${path}`, apiUrl), {
     ...options,

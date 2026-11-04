@@ -22,6 +22,34 @@ namespace Resumade.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Resumade.Api.Models.AccountActionToken", b =>
+                {
+                    b.Property<string>("Hash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTime?>("ConsumedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Purpose")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Hash");
+
+                    b.HasIndex("UserId", "Purpose", "CreatedAtUtc");
+
+                    b.ToTable("AccountActionTokens");
+                });
+
             modelBuilder.Entity("Resumade.Api.Models.Resume", b =>
                 {
                     b.Property<Guid>("Id")
@@ -69,6 +97,9 @@ namespace Resumade.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("EmailVerifiedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("FailedSignInAttempts")
                         .HasColumnType("integer");
 
@@ -76,8 +107,11 @@ namespace Resumade.Api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("SecurityVersion")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -85,6 +119,15 @@ namespace Resumade.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("Resumade.Api.Models.AccountActionToken", b =>
+                {
+                    b.HasOne("Resumade.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Resumade.Api.Models.Resume", b =>

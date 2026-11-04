@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
-export const signinSchema = z.object({
-  email: z
-    .email('Invalid email')
-    .min(1, { message: 'Email is required' })
-    .max(50, { message: 'Maximum 50 characters' }),
-  password: z.string().min(8).max(128),
-});
+const email = z.string().trim().max(254).pipe(z.email('Enter a valid email address.'));
+const password = z.string().min(8, 'Use at least 8 characters.').max(128, 'Use at most 128 characters.');
+const confirmation = { password, confirmPassword: z.string() };
+const passwordsMatch = (data: { password: string; confirmPassword: string }) =>
+  data.password === data.confirmPassword;
+const mismatch = { message: 'Passwords do not match.', path: ['confirmPassword'] };
+
+export const signinSchema = z.object({ email, password });
 
 export const signinResponseSchema = z.object({
   accessToken: z.string().min(1),
@@ -17,17 +18,17 @@ export const signinResponseSchema = z.object({
   }),
 });
 
-export const signupSchema = z
-  .object({
-    name: z.string().trim().min(2, 'Name is too short'),
-    email: z.email(),
-    password: z.string().min(6, 'At least 6 characters'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
+export const signupSchema = z.object({
+  displayName: z.string().trim().min(1, 'Enter your name.').max(100),
+  email,
+  ...confirmation,
+}).refine(passwordsMatch, mismatch).transform(({ displayName, email, password }) => ({
+  displayName, email, password,
+}));
 
-export type SignupInput = z.infer<typeof signupSchema>;
-export type SigninInput = z.infer<typeof signinSchema>;
+export const accountEmailSchema = z.object({ email });
+const token = z.string().regex(/^[0-9A-F]{64}$/, 'This link is invalid.');
+export const tokenSchema = z.object({ token });
+export const resetPasswordSchema = z.object({ token, ...confirmation })
+  .refine(passwordsMatch, mismatch)
+  .transform(({ token, password }) => ({ token, password }));

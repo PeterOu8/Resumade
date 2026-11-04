@@ -54,7 +54,32 @@ Open [localhost:3000](http://localhost:3000). Create a local account to try the 
 
 For Google sign-in, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `web/.env.local`, set `Google__ClientId` to the same client ID for the API, and register `http://localhost:3000/api/auth/callback/google` as the local callback URL.
 
+Google-only accounts can sign in again with Google using the same address. An address already registered with a password continues to use password sign-in. If Auth.js displays a generic server error after the Google callback, check the backend for `Google sign-in rejected`. The `password_account_exists` reason indicates a password account, and `invalid_token` warrants checking that the frontend and backend use the same Google client ID.
+
 To run the HTTPS profile, use `dotnet dev-certs https --trust`, start the API with `--launch-profile https`, and set `API_URL=https://localhost:7131`. If Node needs the local CA, set `NODE_EXTRA_CA_CERTS` to the public certificate PEM before starting the web process.
+
+## Transactional email and deployment
+
+The API reads these settings from the hosting environment. Keep the API key in the backend secret store. The Vercel frontend only needs its existing Auth.js and API connection settings.
+
+| Backend setting | Value |
+| --- | --- |
+| `Resend__ApiKey` | Resend key with sending access to the verified domain |
+| `Email__FromAddress` | `noreply@resumade.lisungou.com` |
+| `Frontend__BaseUrl` | `https://resumade-zeta.vercel.app` |
+
+For local email testing in Development, use the same verified sender and set `Frontend:BaseUrl` to `http://localhost:3000` in the API project's user secrets. Use `Resend:ApiKey` and `Email:FromAddress` as the hierarchical user-secret keys. Send to a mailbox you control. Automated account tests inject a recording sender.
+
+1. Add `resumade.lisungou.com` under **Domains** in Resend. Publish the SPF and DKIM records shown by Resend in the DNS zone for `lisungou.com`, including the sending subdomain MX record shown in the dashboard. Wait for DNS propagation and click **Verify**.
+2. Disable click tracking for this sending domain so email action links open directly on the configured frontend. Use a domain-scoped sending key and configure the backend environment variables above. [Resend domain setup](https://resend.com/docs/dashboard/domains/introduction)
+3. Back up the database and apply the migrations through `20261105010200_AddAccountSecurity` before deploying the API and frontend together. Run `dotnet ef database update --project api/Resumade.Api.csproj` with the target database connection and existing API settings in the environment.
+4. After deployment, exercise signup, verification, password reset and Google sign-in with test accounts. Check Resend delivery events and the backend's account email warning count if a message fails to arrive.
+
+Existing password accounts retain their passwords and resumes. They must verify their address before signing in. Use the API’s resend-verification endpoint to send a link for an existing unverified account. Existing Google accounts are marked verified after their next successful Google sign-in. Older API tokens lack the required security-version claim and become invalid at deployment. Sessions end at the one-hour API token deadline, even if Auth.js has renewed the cookie. Users sign in again when the session ends.
+
+The IP limiter runs per API instance. Next.js sends auth requests from the server, so users sharing an outbound address may share its quota. PostgreSQL enforces per-account email limits across instances. Email requests return a generic response and send synchronously, so delivery can affect response timing. Failed sends count toward the cooldown and can be retried after the limit clears.
+
+Run the PostgreSQL account lifecycle integration test with `RESUMADE_AUTH_TEST_POSTGRES` set to a dedicated test database connection. Its role needs permission to create schemas. The test applies the migration chain in a temporary schema and removes the schema afterwards.
 
 ## Continuous integration
 
@@ -68,6 +93,7 @@ Changes under `web/` or to the root `.npmrc` run these checks. CI uses Node.js 2
 Set-Location web
 npm ci
 npm run lint
+node --test scripts/auth.test.mjs
 npm exec -- next typegen
 npm exec -- tsc --noEmit
 npm run build
@@ -77,7 +103,7 @@ The Next.js build fetches Geist fonts from Google Fonts. Auth.js and API setting
 
 ### Backend checks
 
-Changes under `api/` or `tests/`, to `Resumade.Api.slnx`, or to root .NET and NuGet build configuration run these checks. CI uses .NET SDK 10, caches NuGet packages using both project lockfiles, and uploads xUnit's TRX results for seven days. PDF tests use the runner's Google Chrome with its sandbox enabled. The suite needs a placeholder connection string for API startup and runs without a PostgreSQL service.
+Changes under `api/` or `tests/`, to `Resumade.Api.slnx`, or to root .NET and NuGet build configuration run these checks. CI uses .NET SDK 10, caches NuGet packages using both project lockfiles, and uploads xUnit's TRX results for seven days. PDF tests use the runner's Google Chrome with its sandbox enabled. CI runs the account lifecycle test against a disposable PostgreSQL service. For local runs, set `RESUMADE_AUTH_TEST_POSTGRES` as described above to include that test.
 
 Run from the repository root in a fresh PowerShell session. Set the browser path to your local Chrome or Chromium executable, or let PuppeteerSharp download one on first use.
 

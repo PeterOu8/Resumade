@@ -11,6 +11,8 @@ using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Resume;
 using Scalar.AspNetCore;
+using Resend;
+using System.Security.Claims;
 using System.Globalization;
 using System.Net;
 using System.Threading.RateLimiting;
@@ -115,6 +117,15 @@ builder.Services.AddOpenApi(options =>
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IAccountEmailSender, AccountEmailSender>();
+builder.Services.AddHttpClient<ResendClient>(client => client.Timeout = TimeSpan.FromSeconds(5));
+builder.Services.Configure<ResendClientOptions>(options =>
+{
+    options.ThrowExceptions = true;
+    options.ApiToken = builder.Configuration["Resend:ApiKey"]
+        ?? builder.Configuration["Resend__ApiKey"] ?? string.Empty;
+});
+builder.Services.AddTransient<IResend, ResendClient>();
 builder.Services.AddScoped<ResumeService>();
 builder.Services.AddScoped<ResumeParserService>();
 builder.Services.AddSingleton<ResumeGenerationService>();
@@ -134,6 +145,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ClockSkew = TimeSpan.Zero,
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
@@ -141,6 +153,29 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+        options.IncludeErrorDetails = false;
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var principal = context.Principal!;
+                if (!Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var userId) ||
+                    !int.TryParse(principal.FindFirstValue("sv"), NumberStyles.None,
+                        CultureInfo.InvariantCulture, out var version))
+                {
+                    context.Fail("Invalid account state.");
+                    return;
+                }
+
+                var db = context.HttpContext.RequestServices.GetRequiredService<ResumadeDbContext>();
+                if (!await db.Users.AnyAsync(user => user.Id == userId &&
+                    user.EmailVerifiedAtUtc != null && user.SecurityVersion == version,
+                    context.HttpContext.RequestAborted))
+                {
+                    context.Fail("Invalid account state.");
+                }
+            }
         };
     });
 
@@ -156,7 +191,8 @@ builder.Services.AddDbContext<ResumadeDbContext>(options =>
 
 var app = builder.Build();
 
-app.UseForwardedHeaders();
+if (knownProxyAddresses.Length > 0)
+    app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("Frontend");

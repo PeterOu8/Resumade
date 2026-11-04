@@ -29,6 +29,19 @@ jobs:
     name: Backend checks
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_DB: resumade_test
+          POSTGRES_PASSWORD: resumade-test-only
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -U postgres -d resumade_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - name: Check out repository
@@ -75,6 +88,7 @@ jobs:
           # The default test host needs these settings at startup.
           Jwt__Key: resumade-ci-signing-key-for-tests-only
           ConnectionStrings__ResumadeDatabase: Host=127.0.0.1;Database=unused
+          RESUMADE_AUTH_TEST_POSTGRES: Host=127.0.0.1;Port=${{ job.services.postgres.ports[5432] }};Database=resumade_test;Username=postgres;Password=resumade-test-only
         run: |
           # Use the runner image's system Chrome with sandboxing enabled.
           PUPPETEER_EXECUTABLE_PATH=$(command -v google-chrome)

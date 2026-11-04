@@ -12,7 +12,7 @@ Resumade is a web app for building and revising resumes. Start from a template o
 - **Use AI on your terms.** Connect OpenAI, Claude, Grok, Gemini, or DeepSeek, opt in to AI-assisted PDF parsing, and tailor a draft to a job description with selective before/after approval.
 - **Edit with a live preview.** Reorder sections and entries by dragging, format descriptions with rich text, and adjust the paper size, colours, and margins.
 - **Download your current draft.** Guests and signed-in users can export a PDF using the preview’s layout and styling.
-- **Save resumes to an account.** Sign in to open and manage saved resumes from the dashboard.
+- **Save resumes to an account.** Verify your email to sign in with a password, or use Google sign-in. Open and manage your saved resumes from the dashboard.
 
 ![Resume editor showing Alex Morgan's sample profile and summary alongside a Modern resume preview](docs/screenshots/editor.png)
 
@@ -25,10 +25,10 @@ Resumade is a web app for building and revising resumes. Start from a template o
 | [Web app](web/) | Next.js, React, TypeScript, Tailwind CSS, and Auth.js |
 | [API](api/) | ASP.NET Core 10, EF Core, PostgreSQL, and JWT bearer authentication |
 | PDF workflow | PDF.js extracts text in the browser. The API parses it and uses PuppeteerSharp with Chromium to export the styled preview. |
-| [API tests](tests/Resumade.Api.Tests/) | xUnit tests for health, CORS, rate limiting, AI response validation, and guest PDF export |
+| [API tests](tests/Resumade.Api.Tests/) | xUnit tests for authentication, resume ownership, health, CORS, rate limiting, AI response validation, and guest PDF export |
 
 - **Guest editing and account storage.** Guests can edit a draft and request a PDF export. Auth.js manages web sessions, and the API validates JWTs for access to resumes stored in PostgreSQL.
 - **PDF import and export.** The browser extracts text and layout metadata from uploaded PDFs. The API turns those items into editable sections and renders exports in sandboxed Chromium with scripts and external requests blocked.
-- **Continuous integration.** Separate GitHub Actions workflows run frontend linting, type checks, and a production build, plus a Release build and the backend test suite. Each PR reports both checks and runs validation for the parts it changes.
+- **Continuous integration.** Separate GitHub Actions workflows run frontend linting, auth tests, type checks, and a production build, plus a Release build and the backend test suite with PostgreSQL. Each PR reports both checks and runs validation for the parts it changes.
 
 [Development and CI guide](docs/development.md) · [API reference](docs/api.md)

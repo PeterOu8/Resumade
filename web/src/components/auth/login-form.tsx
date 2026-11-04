@@ -51,8 +51,9 @@ async function signInWithPassword(formData: FormData) {
 
 export function LoginForm({
   className,
+  notice,
   ...props
-}: React.ComponentProps<'div'>) {
+}: React.ComponentProps<'div'> & { notice?: React.ReactNode }) {
   return (
     <div className={cn('min-w-0', className)} {...props}>
       <Card className="gap-0 rounded-2xl border border-border bg-card py-0 text-foreground shadow-panel ring-0">
@@ -72,6 +73,7 @@ export function LoginForm({
         </CardHeader>
         <CardContent className="px-6 pt-7 pb-7 sm:px-8 sm:pb-9">
           <FieldGroup className="gap-5">
+            {notice}
             <form action={signInWithGoogle}>
               <Field>
                 <Button
@@ -122,12 +124,12 @@ export function LoginForm({
                     >
                       Password
                     </FieldLabel>
-                    <a
-                      href="#"
+                    <Link
+                      href="/forgot-password"
                       className="ml-auto text-xs font-medium text-foreground-muted underline-offset-4 hover:text-primary hover:underline"
                     >
                       Forgot your password?
-                    </a>
+                    </Link>
                   </div>
                   <Input
                     id="password"
@@ -144,8 +146,8 @@ export function LoginForm({
                   >
                     Sign in
                   </Button>
-                  <FieldDescription className="mt-1 text-center text-sm text-foreground-muted [&>a]:font-semibold [&>a]:text-primary">
-                    Don&apos;t have an account?{' '}
+                  <FieldDescription className="mt-2 flex flex-wrap items-center justify-center gap-x-3 text-center text-sm text-foreground-muted [&>a]:font-semibold [&>a]:text-primary [&>a]:no-underline">
+                    Don&apos;t have an account?
                     <Link href="/signup">Sign up</Link>
                   </FieldDescription>
                 </Field>

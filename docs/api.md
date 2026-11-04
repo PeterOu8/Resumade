@@ -7,9 +7,13 @@ The ASP.NET Core API lives in `api/`. Local HTTPS examples use `https://localhos
 | Method | Route                | Authentication | Success response                                                     |
 | ------ | -------------------- | -------------- | -------------------------------------------------------------------- |
 | GET    | `/api/health`        | None           | `200` with `status: "healthy"` and `service: "Resumade API"`.        |
-| POST   | `/api/auth/register` | None           | `200` with an access token and user details.                         |
-| POST   | `/api/auth/signin`   | None           | `200` with the same authentication response.                         |
-| POST   | `/api/auth/google`   | Google ID token | `200` with the same authentication response. Accepts `{ "idToken": "…" }`. |
+| POST   | `/api/auth/register` | None           | `202` with an empty body. Sends a verification email.                         |
+| POST   | `/api/auth/signin`   | None           | `200` with an access token and user details.                         |
+| POST   | `/api/auth/google`   | Google ID token | `200` with an access token and user details. Accepts `{ "idToken": "…" }`. |
+| POST   | `/api/auth/resend-verification` | None | `202` with an empty body. Accepts `{ "email": "…" }`. |
+| POST   | `/api/auth/verify-email` | None | `204`. Accepts `{ "token": "…" }`. |
+| POST   | `/api/auth/forgot-password` | None | `202` with an empty body. Accepts `{ "email": "…" }`. |
+| POST   | `/api/auth/reset-password` | None | `204`. Accepts `{ "token": "…", "password": "…" }`. |
 | GET    | `/api/auth/me`       | Bearer token   | `200` with user ID, email, and display name from the token's claims. |
 
 Registration accepts:
@@ -24,7 +28,7 @@ Registration accepts:
 
 Sign-in accepts `email` and `password`. Email is required and has a maximum length of 254 characters. Registration requires a password of 8 to 128 characters and a display name of at most 100 characters. Sign-in requires a password of at most 128 characters.
 
-The service trims and lowercases email addresses, trims display names on registration, and stores hashed passwords. Successful registration and login return:
+The service trims and lowercases email addresses, trims display names on registration, and stores hashed passwords. Successful password and Google sign-in return:
 
 ```json
 {
@@ -37,11 +41,15 @@ The service trims and lowercases email addresses, trims display names on registr
 }
 ```
 
-Tokens use HMAC-SHA256 and expire one hour after issuance. Protected requests must include `Authorization: Bearer <jwt>`. Issuer, audience, lifetime, and signing key are validated. There is no refresh-token or logout endpoint.
+Tokens use HMAC-SHA256 and expire one hour after issuance. Protected requests must include `Authorization: Bearer <jwt>`. The API validates the issuer, audience, lifetime, signature, and current database account state. The account must exist, be verified, and match the JWT security version. Password reset increments that version and invalidates earlier tokens.
 
-Registration returns `409` for an already registered email. Sign-in returns `401` for invalid credentials or a rejected Google ID token. Invalid request DTOs return `400`. The web app manages sign-out through Auth.js.
+Registration returns `409` for an already registered email. Password sign-in requires a verified email. Sign-in returns `401` for invalid credentials or a rejected Google ID token. Invalid request DTOs return `400`. The web app manages sign-out through Auth.js.
 
 After five incorrect password attempts, password sign-in is locked for that account for 15 minutes. Locked accounts receive the same `401` response as other invalid sign-in attempts.
+
+Verification tokens expire after 24 hours. Password reset tokens expire after 30 minutes. Both are single-use and stored as hashes. An invalid, expired, used, or wrong-purpose token returns `400`. A successful reset also clears the password lockout and consumes other outstanding reset tokens. The user must then sign in with the new password.
+
+Resend and forgot-password return the same `202` whether or not an email is sent. Each eligible account can request one email per purpose per 60 seconds and up to five per purpose per rolling hour.
 
 ## Request limits
 
@@ -218,6 +226,6 @@ Invalid keys return `401` or `403`, provider throttling returns `429`, invalid r
 
 ## Persistence
 
-`ResumadeDbContext` uses EF Core with PostgreSQL. A user has a GUID, unique email, password hash, display name, and UTC creation timestamp. A resume has a GUID, user foreign key, title, serialized `ContentJson`, and UTC creation/update timestamps. The service serializes and deserializes content using web JSON defaults; clients receive a content object rather than the raw JSON string.
+`ResumadeDbContext` uses EF Core with PostgreSQL. A user has a GUID, unique email, password hash, display name, UTC creation and verification timestamps, lockout state, and a security version. A resume has a GUID, user foreign key, title, serialized `ContentJson`, and UTC creation/update timestamps. The service serializes and deserializes content using web JSON defaults; clients receive a content object rather than the raw JSON string.
 
 The database relationship cascades resume deletion when a user is deleted, though no user-deletion endpoint exists. Migrations are stored in `api/Migrations/` and must be applied explicitly; see [development setup](development.md).

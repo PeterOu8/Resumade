@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth';
+import { isCurrentApiToken } from './lib/auth/api-token';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import { signinSchema, signinResponseSchema } from './lib/auth/auth.schema';
@@ -61,7 +62,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 60 * 60,
   },
   callbacks: {
     async jwt({ token, account, user }) {
@@ -74,7 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         token.apiUserId = user.id;
         token.apiToken = user.apiToken;
-        return token;
+        return isCurrentApiToken(token.apiToken) ? token : null;
       }
       if (account?.provider === 'google') {
         const apiUrl = process.env.API_URL;
@@ -100,13 +101,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.apiToken = accessToken;
         token.apiUserId = user.userId;
       }
-      return token;
+      return isCurrentApiToken(token.apiToken) ? token : null;
     },
     async session({ session, token }) {
       if (token.apiUserId !== undefined) {
         session.user.id = token.apiUserId;
       }
-      session.error = token.error;
       return session;
     },
   },

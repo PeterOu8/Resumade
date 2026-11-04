@@ -80,6 +80,12 @@
           "WebDriverBiDi": "0.0.61"
         }
       },
+      "Resend": {
+        "type": "Direct",
+        "requested": "[0.24.0, )",
+        "resolved": "0.24.0",
+        "contentHash": "5bMgb/7F2zfLNYufdlj+evYWB7ur93hSBfwT8x+wphkkeN0cpzoCh3Yz0H1rY/5DvjgwztVIicRWLFIMIYfjvQ=="
+      },
       "Scalar.AspNetCore": {
         "type": "Direct",
         "requested": "[2.17.2, )",

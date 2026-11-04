@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { FileText } from 'lucide-react';
 
@@ -18,23 +17,13 @@ async function SavedResumes() {
   try {
     resumes = await listSavedResumes();
   } catch (error) {
-    const expired = error instanceof ResumeApiError && error.status === 401;
+    if (error instanceof ResumeApiError && error.status === 401) redirect('/signin');
     return (
       <div
         role="alert"
         className="rounded-2xl border border-[#ead8dc] bg-white p-6 text-sm text-[#9a3d48]"
       >
-        {expired ? (
-          <>
-            Your account session has expired.{' '}
-            <Link className="font-semibold underline" href="/signin">
-              Sign in again
-            </Link>{' '}
-            to load your resumes.
-          </>
-        ) : (
-          'Could not load your saved resumes. Refresh the page to try again.'
-        )}
+        Could not load your saved resumes. Refresh the page to try again.
       </div>
     );
   }

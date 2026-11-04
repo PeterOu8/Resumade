@@ -1,4 +1,4 @@
-﻿namespace Resumade.Api.Models
+namespace Resumade.Api.Models
 {
     public class User
     {
@@ -12,6 +12,8 @@
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public DateTime? EmailVerifiedAtUtc { get; set; }
+        public int SecurityVersion { get; set; }
         public int FailedSignInAttempts { get; set; }
 
         public DateTime? LockoutEndUtc { get; set; }

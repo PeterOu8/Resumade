@@ -63,6 +63,10 @@ jobs:
         if: steps.scope.outputs.skip != 'true'
         run: npm run lint
 
+      - name: Test account flows
+        if: steps.scope.outputs.skip != 'true'
+        run: node --test scripts/auth.test.mjs
+
       - name: Type check
         if: steps.scope.outputs.skip != 'true'
         run: |

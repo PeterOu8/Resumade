@@ -56,6 +56,9 @@ public sealed class ForwardedHeadersTests
         };
         request.Headers.Add("X-Forwarded-For", forwardedFor);
         using var response = await client.SendAsync(request);
+        if (response.StatusCode == HttpStatusCode.TooManyRequests)
+            Assert.True(response.Headers.RetryAfter?.Delta > TimeSpan.Zero);
+
         return response.StatusCode;
     }
 

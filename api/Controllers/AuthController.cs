@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.RateLimiting;
 using Resumade.Api.Dtos.Auth;
+using Resumade.Api.Models;
 using Resumade.Api.Services.Auth;
 
 namespace Resumade.Api.Controllers
@@ -20,18 +21,42 @@ namespace Resumade.Api.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<ActionResult<AuthResponse>> Register(RegisterDto dto)
+        public async Task<IActionResult> Register(RegisterDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
                 return BadRequest("Email and password are required.");
 
             var result = await _authService.RegisterAsync(dto);
 
-            if (result == null)
+            if (!result)
                 return Conflict("Email is already registered.");
 
-            return Ok(result);
+            return Accepted();
         }
+
+        [HttpPost("resend-verification")]
+        public async Task<IActionResult> ResendVerification(AccountEmailDto dto)
+        {
+            await _authService.RequestAccountEmailAsync(dto.Email, AccountAction.VerifyEmail);
+            return Accepted();
+        }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(AccountEmailDto dto)
+        {
+            await _authService.RequestAccountEmailAsync(dto.Email, AccountAction.ResetPassword);
+            return Accepted();
+        }
+
+        [HttpPost("verify-email")]
+        public async Task<IActionResult> VerifyEmail(VerifyEmailDto dto) =>
+            await _authService.VerifyEmailAsync(dto.Token)
+                ? NoContent() : BadRequest("This link is invalid or has expired.");
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordDto dto) =>
+            await _authService.ResetPasswordAsync(dto.Token, dto.Password)
+                ? NoContent() : BadRequest("This link is invalid or has expired.");
 
         [HttpPost("signin")]
         public async Task<ActionResult<AuthResponse>> SignIn(SignInDto dto)

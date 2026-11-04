@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { deleteSavedResume, ResumeApiError } from './resume-api';
@@ -14,7 +15,7 @@ export async function deleteResume(id: string) {
     await deleteSavedResume(id);
   } catch (error) {
     if (error instanceof ResumeApiError && error.status === 401) {
-      return { error: 'Sign in again to delete this resume.' };
+      redirect('/signin');
     }
     if (error instanceof ResumeApiError && error.status === 404) {
       return { error: 'The saved resume could not be found.' };
