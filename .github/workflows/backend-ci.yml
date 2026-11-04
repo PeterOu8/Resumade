@@ -126,21 +126,33 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository_owner }}/resumade-api:${{ github.sha }}
         run: |
           image="${IMAGE,,}"
-          docker build --platform linux/amd64 \
+          if ! docker build --platform linux/amd64 \
             --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
-            --tag "$image" api
+            --tag "$image" api > "$RUNNER_TEMP/resumade-build.log" 2>&1; then
+            cat "$RUNNER_TEMP/resumade-build.log"
+            build_error=$(grep -E 'ERROR:|failed to solve' "$RUNNER_TEMP/resumade-build.log" | tail -1)
+            echo "::error::Container build failed. $build_error"
+            exit 1
+          fi
           container=$(docker run --detach --publish 127.0.0.1:18080:8080 \
             --env Jwt__Key=container-smoke-test-key-at-least-32-characters \
             --env 'ConnectionStrings__ResumadeDatabase=Host=localhost;Database=unused' "$image")
           trap 'docker logs "$container"; docker rm --force "$container" >/dev/null' EXIT
-          curl --fail --silent --show-error --retry 10 --retry-connrefused \
-            --retry-delay 1 http://127.0.0.1:18080/api/health
-          curl --fail --silent --show-error --max-time 45 \
+          if ! curl --fail --silent --show-error --retry 10 --retry-connrefused \
+            --retry-delay 1 http://127.0.0.1:18080/api/health; then
+            echo "::error::The container did not pass its HTTP health check."
+            exit 1
+          fi
+          if ! curl --fail --silent --show-error --max-time 45 \
             --header 'Content-Type: application/json' \
             --data '{"title":"Container smoke test","html":"<h1>Container smoke test</h1>"}' \
-            --output "$RUNNER_TEMP/resumade-smoke.pdf" http://127.0.0.1:18080/api/resumes/pdf
-          test "$(head -c 5 "$RUNNER_TEMP/resumade-smoke.pdf")" = '%PDF-'
+            --output "$RUNNER_TEMP/resumade-smoke.pdf" http://127.0.0.1:18080/api/resumes/pdf ||
+            [[ "$(head -c 5 "$RUNNER_TEMP/resumade-smoke.pdf")" != '%PDF-' ]]; then
+            browser_error=$(docker logs "$container" 2>&1 | grep -Ei 'sandbox|failed to launch|operation not permitted' | tail -1)
+            echo "::error::The container PDF smoke test failed. $browser_error"
+            exit 1
+          fi
 
       - name: Push the commit-tagged image to GHCR
         env:
