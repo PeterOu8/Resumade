@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
-import { signinSchema, signinResponseSchema } from './lib/schemas';
+import { signinSchema, signinResponseSchema } from './lib/auth/auth.schema';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const apiUrl = process.env.API_URL;
         if (!apiUrl) throw new Error('API_URL is missing');
 
-        const response = await fetch(new URL('/api/auth/login', apiUrl), {
+        const response = await fetch(new URL('/api/auth/signin', apiUrl), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(input.data),
@@ -89,7 +89,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           signal: AbortSignal.timeout(10_000),
         });
         if (!response.ok) {
-          throw new Error(`Google sign-in API returned HTTP ${response.status}`);
+          throw new Error(
+            `Google sign-in API returned HTTP ${response.status}`,
+          );
         }
 
         const { accessToken, user } = signinResponseSchema.parse(
