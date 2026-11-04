@@ -7,6 +7,7 @@ import { createPreviewHtml } from '@/lib/pdf/preview-html';
 import { saveResume } from '@/lib/resume/save-resume';
 import type { ResumeContent, ResumeDraft } from '@/lib/resume/resume.schema';
 import { ImportPdfDialog } from '@/components/start/import-pdf-dialog';
+import { AiTailorDialog } from './ai-tailor-dialog';
 import { toast } from '@/components/ui/toast';
 
 import { TextField } from './editor-fields';
@@ -65,6 +66,7 @@ export function ResumeEditor({
     draftScope,
   });
   const [importOpen, setImportOpen] = useState(false);
+  const [tailorOpen, setTailorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const saveInFlight = useRef(false);
@@ -258,6 +260,7 @@ export function ResumeEditor({
           onUndo={document.undo}
           onRedo={document.redo}
           onImport={() => setImportOpen(true)}
+          onTailor={() => setTailorOpen(true)}
           canSaveToAccount={canSaveToAccount}
           saving={saving}
           onSave={() => void saveToAccount()}
@@ -332,6 +335,16 @@ export function ResumeEditor({
           document.importDraft(imported, 'Import PDF');
           setImportOpen(false);
           toast.add({ title: 'Resume imported', type: 'success' });
+        }}
+      />
+      <AiTailorDialog
+        open={tailorOpen}
+        resume={content}
+        onClose={() => setTailorOpen(false)}
+        onApply={(tailoredContent) => {
+          document.importDraft({ ...draft, content: tailoredContent }, 'Apply AI tailoring');
+          setTailorOpen(false);
+          toast.add({ title: 'Selected AI changes applied', type: 'success' });
         }}
       />
     </main>

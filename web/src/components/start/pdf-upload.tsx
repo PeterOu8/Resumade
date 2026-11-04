@@ -6,10 +6,12 @@ import { FileUp, LoaderCircle } from 'lucide-react';
 
 import { readPdf } from '@/lib/pdf/read-pdf';
 import { resumeContentSchema, type ResumeDraft } from '@/lib/resume/resume.schema';
+import { useAiSettings } from '@/lib/ai/ai-settings';
 
 type ImportPhase = 'reading' | 'parsing' | null;
 
 export function PdfUpload({ onImported }: { onImported: (draft: ResumeDraft) => void }) {
+  const { settings, connection, openSettings } = useAiSettings();
   const [phase, setPhase] = useState<ImportPhase>(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
@@ -19,6 +21,10 @@ export function PdfUpload({ onImported }: { onImported: (draft: ResumeDraft) => 
 
   async function importFile(file: File) {
     if (controllerRef.current) return;
+    if (settings.aiParsingEnabled && connection.apiKey.length < 8) {
+      setError('Add an API key in AI settings before using AI parsing.');
+      return;
+    }
 
     const controller = new AbortController();
     controllerRef.current = controller;
@@ -34,7 +40,7 @@ export function PdfUpload({ onImported }: { onImported: (draft: ResumeDraft) => 
       const response = await fetch('/api/resumes/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(textItems),
+        body: JSON.stringify(settings.aiParsingEnabled ? { textItems, ai: connection } : textItems),
         signal: controller.signal,
       });
       const result: unknown = await response.json().catch(() => null);
@@ -122,7 +128,15 @@ export function PdfUpload({ onImported }: { onImported: (draft: ResumeDraft) => 
         </p>
       )}
       <p className="mt-4 text-xs leading-5 text-[#687282]">
-        Review imported details in the editor. Scanned PDFs require selectable text or OCR.
+        {settings.aiParsingEnabled ? (
+          <>AI parsing is on with {connection.provider}. Your PDF text is sent to that provider. </>
+        ) : (
+          <>AI parsing is off. Resumade&apos;s rules-based parser will be used. </>
+        )}
+        <button type="button" onClick={openSettings} className="font-semibold text-[#3558c8] underline-offset-2 hover:underline">
+          Change AI settings
+        </button>
+        . Scanned PDFs require selectable text or OCR.
       </p>
     </div>
   );

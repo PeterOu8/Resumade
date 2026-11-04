@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 
 import { auth, signOut } from '@/auth';
 import { ResumadeLogo } from '@/components/resumade-logo';
+import { AiSettingsButton } from '@/components/ai/ai-settings-button';
 
 const accountButtonClass =
   'inline-flex h-9 items-center justify-center rounded-lg border border-[#d7deea] bg-white px-3 text-xs font-semibold text-[#273348] transition-colors hover:bg-[#eef2fa] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#95a9f0] sm:h-10 sm:px-4 sm:text-sm';
@@ -35,6 +36,7 @@ async function AccountNavigation() {
       >
         {signedIn ? 'Dashboard' : 'Start building'}
       </Link>
+      <AiSettingsButton className={accountButtonClass} />
     </div>
   );
 }

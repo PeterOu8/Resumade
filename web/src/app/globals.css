@@ -128,3 +128,25 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+.ai-dialog-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #aab5c5 transparent;
+}
+
+.ai-dialog-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-dialog-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ai-dialog-scroll::-webkit-scrollbar-thumb {
+  background: #aab5c5;
+  border-radius: 9999px;
+}
+
+.ai-dialog-scroll::-webkit-scrollbar-thumb:hover {
+  background: #8290a5;
+}

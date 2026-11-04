@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, FileUp, Redo2, Save, Undo2 } from 'lucide-react';
+import { ArrowLeft, FileUp, Redo2, Save, Sparkles, Undo2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,13 +14,14 @@ type Props = {
   onUndo: () => void;
   onRedo: () => void;
   onImport: () => void;
+  onTailor: () => void;
   canSaveToAccount: boolean;
   saving: boolean;
   onSave: () => void;
 };
 
 export function EditorToolbar({
-  canUndo, canRedo, onUndo, onRedo, onImport, canSaveToAccount, saving, onSave,
+  canUndo, canRedo, onUndo, onRedo, onImport, onTailor, canSaveToAccount, saving, onSave,
 }: Props) {
   const router = useRouter();
 
@@ -49,6 +50,15 @@ export function EditorToolbar({
         </Button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          disabled={saving}
+          onClick={onTailor}
+          className="h-9 rounded-lg bg-[#3558c8] px-3 text-white shadow-[0_5px_14px_#3558c82d] hover:bg-[#2847a9]"
+        >
+          <Sparkles aria-hidden="true" /> Tailor with AI
+        </Button>
         <Button
           type="button"
           size="sm"
