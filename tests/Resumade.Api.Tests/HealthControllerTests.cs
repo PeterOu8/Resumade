@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
@@ -37,5 +38,22 @@ public sealed class HealthControllerTests(
         Assert.Equal(
             2,
             json.RootElement.EnumerateObject().Count());
+    }
+
+    [Fact]
+    public async Task ParseRateLimit_RejectsRequestsAbovePerIpLimit()
+    {
+        using var client = factory.CreateClient();
+
+        for (var requestNumber = 0; requestNumber < 20; requestNumber++)
+        {
+            using var allowed = await client.PostAsJsonAsync("/api/resumes/parse", Array.Empty<object>());
+            Assert.NotEqual(HttpStatusCode.TooManyRequests, allowed.StatusCode);
+        }
+
+        using var rejected = await client.PostAsJsonAsync("/api/resumes/parse", Array.Empty<object>());
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.NotNull(rejected.Headers.RetryAfter);
     }
 }

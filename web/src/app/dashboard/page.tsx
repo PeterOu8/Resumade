@@ -1,10 +1,11 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { ArrowUpRight, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 import { auth } from '@/auth';
 import { DashboardToolbar } from '@/components/dashboard/dashboard-toolbar';
+import { ResumeCard } from '@/components/dashboard/resume-card';
 import { listSavedResumes, ResumeApiError } from '@/lib/resume/resume-api';
 
 const dateFormat = new Intl.DateTimeFormat('en-AU', {
@@ -57,29 +58,12 @@ async function SavedResumes() {
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {resumes.map((resume) => (
         <li key={resume.id} className="min-w-0">
-          <Link
-            href={`/editor?resume=${resume.id}`}
-            className="group flex h-full items-start gap-4 rounded-2xl border border-[#dce2ec] bg-white p-5 shadow-[0_5px_20px_#27356008] transition-colors hover:border-[#aebef0] hover:bg-[#f8faff] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#95a9f0]"
-          >
-            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#eaf0ff] text-[#3558c8]">
-              <FileText className="size-5" aria-hidden="true" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate font-semibold text-[#273348]">
-                {resume.title}
-              </span>
-              <span className="mt-1 block text-sm text-[#687282]">
-                Updated{' '}
-                <time dateTime={resume.updatedAt}>
-                  {dateFormat.format(new Date(resume.updatedAt))}
-                </time>
-              </span>
-            </span>
-            <ArrowUpRight
-              className="size-4 shrink-0 text-[#8d9bb3] group-hover:text-[#3558c8]"
-              aria-hidden="true"
-            />
-          </Link>
+          <ResumeCard
+            id={resume.id}
+            title={resume.title}
+            updatedAt={resume.updatedAt}
+            updatedLabel={dateFormat.format(new Date(resume.updatedAt))}
+          />
         </li>
       ))}
     </ul>

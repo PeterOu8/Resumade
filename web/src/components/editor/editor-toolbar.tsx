@@ -126,6 +126,7 @@ export function EditorToolbar({
             variant="destructive"
             disabled={saving || deleting}
             onClick={onDelete}
+            className="h-9 rounded-control px-3"
           >
             <Trash2 aria-hidden="true" /> {deleting ? 'Deleting…' : 'Delete'}
           </Button>

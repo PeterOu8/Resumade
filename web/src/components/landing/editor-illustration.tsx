@@ -31,7 +31,9 @@ export function EditorIllustration() {
 
       <div className="grid min-h-[420px] grid-cols-[minmax(0,45%)_1px_minmax(0,55%)]">
         <div className="min-w-0 px-[17px] py-[19px] max-[520px]:px-2.5 max-[520px]:py-[13px]">
-          <div className="text-xs font-bold">Build your story</div>
+          <div className="text-xs font-bold text-[#1e2636]">
+            Build your story
+          </div>
           <div className="mt-[13px] mb-4 rounded-md border border-[#dce1e8] px-2.5 py-2 text-[10px] text-[#6e7989]">
             Product designer resume
           </div>
@@ -80,12 +82,14 @@ export function EditorIllustration() {
             <h3 className="text-[17px] leading-[1.1] font-bold max-[520px]:text-[13px]">
               Alex Morgan
             </h3>
-            <p className="text-[#415cae]">alex.morgan@email.com &nbsp; | &nbsp; London, UK</p>
+            <p className="text-[#415cae]">
+              alex.morgan@email.com &nbsp; | &nbsp; London, UK
+            </p>
 
             <PaperSectionTitle>SUMMARY</PaperSectionTitle>
             <p>
-              I turn complex ideas into clear, useful experiences. I work across research,
-              product strategy, and thoughtful visual design.
+              I turn complex ideas into clear, useful experiences. I work across
+              research, product strategy, and thoughtful visual design.
             </p>
 
             <PaperSectionTitle>EXPERIENCE</PaperSectionTitle>
