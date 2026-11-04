@@ -294,12 +294,12 @@ export function ResumeEditor({
   return (
     <main
       ref={workspaceRef}
-      className="resume-editor-workspace mx-auto grid w-full max-w-[1500px] items-start gap-6 px-4 py-8 text-foreground sm:px-7 sm:py-10 lg:gap-4"
+      className="resume-editor-workspace mx-auto grid h-full min-h-0 w-full max-w-[1500px] grid-rows-[auto_minmax(0,1fr)_minmax(0,1fr)] items-stretch gap-4 overflow-hidden px-4 py-4 text-foreground sm:px-7 lg:grid-rows-[auto_minmax(0,1fr)]"
       style={{
         gridTemplateColumns: `minmax(0, ${editorShare}fr) 10px minmax(0, ${100 - editorShare}fr)`,
       }}
     >
-      <div className="resume-editor-heading col-span-full space-y-7 pb-2">
+      <div className="resume-editor-heading col-span-full min-h-0">
         <EditorToolbar
           canUndo={document.canUndo}
           canRedo={document.canRedo}
@@ -325,7 +325,7 @@ export function ResumeEditor({
       </div>
       <Panel
         inert={busy}
-        className="resume-editor-form min-w-0 p-4 sm:p-6"
+        className="resume-editor-form scroll-area min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6"
       >
         <div key={document.generation} className="space-y-6">
           <TextField

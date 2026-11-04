@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { connection } from 'next/server';
 import { z } from 'zod';
 
 import { auth } from '@/auth';
@@ -17,6 +18,7 @@ async function EditorWithTemplate({
 }: {
   searchParams: PageProps<'/editor'>['searchParams'];
 }) {
+  await connection();
   const params = await searchParams;
   const session = await auth();
   const resumeId =
@@ -89,7 +91,7 @@ async function EditorWithTemplate({
 
 export default function EditorPage({ searchParams }: PageProps<'/editor'>) {
   return (
-    <div className="min-h-[calc(100dvh-72px)] bg-canvas text-foreground print:min-h-0 print:bg-white">
+    <div className="h-[calc(100dvh-var(--header-height))] min-h-0 overflow-hidden bg-canvas text-foreground print:h-auto print:overflow-visible print:bg-white">
       <Suspense
         fallback={
           <div className="p-8 text-sm text-foreground-muted">Opening editor…</div>
