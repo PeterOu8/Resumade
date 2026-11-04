@@ -3,6 +3,7 @@ import { Download } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 
 import { editorInputClass, editorOutlineButtonClass } from '../editor-styles';
 import {
@@ -29,10 +30,10 @@ function SelectSetting<T extends string>({
   const id = useId();
   return (
     <div className="flex min-w-0 flex-col gap-1.5 text-sm font-medium">
-      <label htmlFor={id} className="text-xs font-semibold text-[#566173]">
+      <label htmlFor={id} className="text-xs font-semibold text-foreground-label">
         {label}
       </label>
-      <select
+      <Select
         id={id}
         value={value}
         onChange={(event) => {
@@ -41,14 +42,13 @@ function SelectSetting<T extends string>({
           );
           if (selected) onChange(selected[0]);
         }}
-        className="h-10 min-w-0 rounded-lg border border-[#d7deea] bg-white px-3 text-sm font-normal text-[#273348] shadow-[0_1px_2px_#1d273b08] outline-none focus-visible:border-[#3558c8] focus-visible:ring-3 focus-visible:ring-[#3558c8]/15"
       >
         {options.map(([optionId, name]) => (
           <option key={optionId} value={optionId}>
             {name}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }
@@ -79,9 +79,9 @@ const densityOptions = [
 ] as const;
 
 const saveStatusDetails = {
-  saved: { label: 'Saved locally', dotClass: 'bg-[#57a48b]' },
-  unsaved: { label: 'Unsaved locally', dotClass: 'bg-[#d9a958]' },
-  error: { label: 'Local save failed', dotClass: 'bg-[#c66d70]' },
+  saved: { label: 'Saved locally', dotClass: 'bg-success' },
+  unsaved: { label: 'Unsaved locally', dotClass: 'bg-warning' },
+  error: { label: 'Local save failed', dotClass: 'bg-danger' },
 } as const;
 
 export function PreviewToolbar({
@@ -106,15 +106,15 @@ export function PreviewToolbar({
   };
 
   return (
-    <div className="space-y-4 border-b border-[#e4e8f0] bg-white p-4 print:hidden sm:p-5">
+    <div className="space-y-4 border-b border-border-subtle bg-surface p-4 print:hidden sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <span className="text-[10px] font-bold tracking-[0.13em] text-[#3558c8] uppercase">
+          <span className="text-[10px] font-bold tracking-[0.13em] text-primary uppercase">
             ON THE PAGE
           </span>
           <h2
             id="resume-preview-heading"
-            className="text-base font-semibold tracking-[-0.025em] text-[#273348]"
+            className="text-base font-semibold tracking-[-0.025em] text-foreground-strong"
           >
             Live preview
           </h2>
@@ -123,7 +123,7 @@ export function PreviewToolbar({
           {status && (
             <span
               role="status"
-              className="flex items-center gap-1.5 text-xs text-[#687282]"
+              className="flex items-center gap-1.5 text-xs text-foreground-muted"
             >
               <span
                 aria-hidden="true"
@@ -136,7 +136,7 @@ export function PreviewToolbar({
             type="button"
             variant="outline"
             size="sm"
-            className={`${editorOutlineButtonClass} font-semibold text-[#3558c8]`}
+            className={`${editorOutlineButtonClass} font-semibold text-primary`}
             disabled={downloading}
             onClick={onDownload}
           >
@@ -159,19 +159,19 @@ export function PreviewToolbar({
           onChange={(paper) => onChange({ ...settings, paper })}
         />
       </div>
-      <details className="rounded-xl border border-[#e3e8f2] bg-[#f8faff] p-3">
-        <summary className="cursor-pointer text-sm font-semibold text-[#273348]">
+      <details className="rounded-xl border border-border-subtle bg-surface-subtle p-3">
+        <summary className="cursor-pointer text-sm font-semibold text-foreground-strong">
           Colours and margins
         </summary>
         <div className="mt-3 grid grid-cols-2 gap-3">
           {(['accent', 'text'] as const).map((color) => (
             <label
               key={color}
-              className="flex items-center gap-2 text-sm text-[#566173]"
+              className="flex items-center gap-2 text-sm text-foreground-label"
             >
               <Input
                 type="color"
-                className="h-9 w-10 shrink-0 border-[#d7deea] bg-white p-0.5"
+                className="h-9 w-10 shrink-0 border-border-strong bg-surface p-0.5"
                 value={settings.theme[color]}
                 onChange={(event) =>
                   onChange({
@@ -185,12 +185,12 @@ export function PreviewToolbar({
           ))}
         </div>
         <fieldset className="mt-3">
-          <legend className="mb-2 text-sm font-semibold text-[#273348]">
+          <legend className="mb-2 text-sm font-semibold text-foreground-strong">
             Margins (mm)
           </legend>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {marginSides.map((side) => (
-              <label key={side} className="min-w-0 text-xs text-[#566173]">
+              <label key={side} className="min-w-0 text-xs text-foreground-label">
                 {side[0].toUpperCase() + side.slice(1)}
                 <Input
                   type="number"

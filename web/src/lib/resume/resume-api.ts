@@ -35,6 +35,7 @@ async function requestResumes(path = '', options?: RequestInit) {
     signal: AbortSignal.timeout(10_000),
   });
   if (!response.ok) throw new ResumeApiError(response.status);
+  if (response.status === 204) return null;
 
   return response.json() as Promise<unknown>;
 }
@@ -53,4 +54,8 @@ export async function writeSavedResume(draft: ResumeDraft, id?: string) {
     body: JSON.stringify(draft),
   });
   return savedResumeSchema.parse(result);
+}
+
+export async function deleteSavedResume(id: string) {
+  await requestResumes(`/${id}`, { method: 'DELETE' });
 }

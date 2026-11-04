@@ -91,49 +91,49 @@ export function PdfUpload({ onImported }: { onImported: (draft: ResumeDraft) => 
           role: 'button',
           'aria-label': 'Drop your PDF here or browse your files',
           'aria-describedby': 'pdf-drop-hint',
-          className: `flex w-full cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed px-5 py-10 text-center transition-colors focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#95a9f0] ${
+          className: `flex w-full cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed px-5 py-10 text-center transition-colors focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus ${
             isDragReject
-              ? 'border-[#d7777d] bg-[#fff5f5]'
+              ? 'border-danger bg-danger-surface'
               : isDragActive
-                ? 'border-[#3558c8] bg-[#eaf0ff]'
-                : 'border-[#c9d4eb] bg-[#f8faff] hover:border-[#8ca5ea] hover:bg-[#f2f5ff]'
+                ? 'border-primary bg-accent'
+                : 'border-border-strong bg-surface-subtle hover:border-focus hover:bg-surface-hover'
           } ${phase ? 'cursor-wait opacity-75' : ''}`,
         })}
       >
         <input {...getInputProps({ 'aria-label': 'Choose PDF file' })} />
-        <span className="grid size-14 place-items-center rounded-2xl bg-[#e8eeff] text-[#3558c8]">
+        <span className="grid size-14 place-items-center rounded-2xl bg-accent text-primary">
           {phase
             ? <LoaderCircle size={27} className="animate-spin" aria-hidden="true" />
             : <FileUp size={27} strokeWidth={1.7} aria-hidden="true" />}
         </span>
-        <span className="mt-5 text-base font-semibold text-[#273348]">
+        <span className="mt-5 text-base font-semibold text-foreground-strong">
           {phase ? 'Importing your resume' : 'Drop your PDF here'}
         </span>
-        <span className="mt-1 text-sm text-[#687282]">
-          {phase ? fileName : <>or <span className="font-semibold text-[#3558c8]">browse your files</span></>}
+        <span className="mt-1 text-sm text-foreground-muted">
+          {phase ? fileName : <>or <span className="font-semibold text-primary">browse your files</span></>}
         </span>
-        <span id="pdf-drop-hint" className="mt-4 text-xs text-[#8b96a9]">
+        <span id="pdf-drop-hint" className="mt-4 text-xs text-foreground-subtle">
           PDF files only · 10 MB maximum
         </span>
       </div>
 
       {phase && (
-        <p role="status" aria-live="polite" className="mt-4 text-sm text-[#3558c8]">
+        <p role="status" aria-live="polite" className="mt-4 text-sm text-primary">
           {phase === 'reading' ? 'Reading PDF text…' : 'Parsing resume details…'}
         </p>
       )}
       {error && (
-        <p role="alert" className="mt-4 text-sm text-[#a8454d]">
+        <p role="alert" className="mt-4 text-sm text-danger-foreground">
           {error}
         </p>
       )}
-      <p className="mt-4 text-xs leading-5 text-[#687282]">
+      <p className="mt-4 text-xs leading-5 text-foreground-muted">
         {settings.aiParsingEnabled ? (
           <>AI parsing is on with {connection.provider}. Your PDF text is sent to that provider. </>
         ) : (
           <>AI parsing is off. Resumade&apos;s rules-based parser will be used. </>
         )}
-        <button type="button" onClick={openSettings} className="font-semibold text-[#3558c8] underline-offset-2 hover:underline">
+        <button type="button" onClick={openSettings} className="font-semibold text-primary underline-offset-2 hover:underline">
           Change AI settings
         </button>
         . Scanned PDFs require selectable text or OCR.

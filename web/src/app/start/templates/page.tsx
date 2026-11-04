@@ -5,7 +5,7 @@ export default function TemplateSelectionPage() {
   return (
     <StartPageShell
       eyebrow="CREATE FROM SCRATCH"
-      title={<>Choose a{' '}<em className="font-['EB_Garamond',Georgia,serif] font-normal text-[#3558c8]">starting point.</em></>}
+      title={<>Choose a{' '}<em className="font-['EB_Garamond',Georgia,serif] font-normal text-primary">starting point.</em></>}
       description="Every layout works with the same editor. Pick the one that feels right and refine it as you write."
     >
       <TemplateOptions />

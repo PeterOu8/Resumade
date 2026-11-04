@@ -8,7 +8,7 @@ import { PrimaryAction, SectionKicker } from './landing-primitives';
 
 export function HeroSection() {
   return (
-    <section className="relative bg-[radial-gradient(circle_at_87%_12%,#e9edff_0,transparent_34%)] px-7 pt-[108px] pb-28 max-[760px]:px-5 max-[760px]:pt-[70px] max-[760px]:pb-[76px]">
+    <section className="relative bg-[radial-gradient(circle_at_87%_12%,#e9edff_0,transparent_34%)] px-7 pt-[108px] pb-28 dark:bg-[radial-gradient(circle_at_87%_12%,rgba(149,173,255,0.16)_0,transparent_34%)] max-[760px]:px-5 max-[760px]:pt-[70px] max-[760px]:pb-[76px]">
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[length:88px_88px] [background-image:linear-gradient(#182c5710_1px,transparent_1px),linear-gradient(90deg,#182c5710_1px,transparent_1px)] [mask-image:linear-gradient(90deg,transparent_48%,#000_100%)]"
@@ -19,14 +19,14 @@ export function HeroSection() {
             <Sparkles size={14} aria-hidden="true" />A better way to build your
             resume
           </SectionKicker>
-          <h1 className="mt-[26px] mb-6 text-[clamp(48px,5.2vw,78px)] leading-[1.04] font-[650] tracking-[-0.055em] text-[#1e2636] max-[760px]:text-[clamp(43px,11vw,66px)]">
+          <h1 className="mt-[26px] mb-6 text-[clamp(48px,5.2vw,78px)] leading-[1.04] font-[650] tracking-[-0.055em] text-foreground max-[760px]:text-[clamp(43px,11vw,66px)]">
             Your experience,
             <br />
-            <em className="font-['EB_Garamond',Georgia,serif] font-normal tracking-[-0.042em] text-[#3558c8]">
+            <em className="font-['EB_Garamond',Georgia,serif] font-normal tracking-[-0.042em] text-primary">
               beautifully told.
             </em>
           </h1>
-          <p className="max-w-[520px] text-[17px] leading-[1.7] text-[#566173]">
+          <p className="max-w-[520px] text-[17px] leading-[1.7] text-foreground-label">
             Build a resume that feels like you. Shape each section, watch the
             page come together, and move from a blank draft to a document you
             are proud to share.
@@ -35,14 +35,14 @@ export function HeroSection() {
             <PrimaryAction>Start building</PrimaryAction>
             <Link
               href="#how-it-works"
-              className="inline-flex min-h-12 items-center justify-center gap-3 rounded-[9px] border border-[#ccd3dd] bg-[#ffffffc9] px-5 text-sm font-semibold text-[#1e2636] transition-colors duration-200 hover:bg-[#eef1fa] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#95a9f0] motion-reduce:transition-none"
+              className="inline-flex min-h-12 items-center justify-center gap-3 rounded-[9px] border border-border-strong bg-surface/80 px-5 text-sm font-semibold text-foreground transition-colors duration-200 hover:bg-surface-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus motion-reduce:transition-none"
             >
               See how it works
               <ArrowUpRight size={17} aria-hidden="true" />
             </Link>
           </div>
-          <div className="mt-[45px] flex items-center gap-[11px] text-[11px] tracking-[0.08em] text-[#858d9b] uppercase max-[760px]:mt-[30px]">
-            <span className="h-px w-6 bg-[#a6afbd]" />
+          <div className="mt-[45px] flex items-center gap-[11px] text-[11px] tracking-[0.08em] text-foreground-subtle uppercase max-[760px]:mt-[30px]">
+            <span className="h-px w-6 bg-border-strong" />
             Your words. Your layout. One clear page.
           </div>
         </div>
@@ -56,15 +56,15 @@ function FeatureCard({ feature }: { feature: LandingFeature }) {
   const { icon: Icon, number, title, description } = feature;
 
   return (
-    <article className="border-[#e4e7ec] pt-[26px] pr-7 pb-1.5 max-[760px]:border-t max-[760px]:px-0 max-[760px]:pt-6 max-[760px]:pb-7 min-[761px]:not-first:border-l min-[761px]:not-first:pl-7">
-      <div className="flex justify-between text-[#5c76c6]">
-        <span className="font-mono text-xs text-[#a7afbd]">{number}</span>
+    <article className="border-border-subtle pt-[26px] pr-7 pb-1.5 max-[760px]:border-t max-[760px]:px-0 max-[760px]:pt-6 max-[760px]:pb-7 min-[761px]:not-first:border-l min-[761px]:not-first:pl-7">
+      <div className="flex justify-between text-primary">
+        <span className="font-mono text-xs text-foreground-subtle">{number}</span>
         <Icon size={22} strokeWidth={1.6} aria-hidden="true" />
       </div>
       <h3 className="mt-[37px] text-[19px] font-[650] tracking-[-0.025em] max-[760px]:mt-4">
         {title}
       </h3>
-      <p className="mt-[11px] text-sm leading-[1.7] text-[#687282]">
+      <p className="mt-[11px] text-sm leading-[1.7] text-foreground-muted">
         {description}
       </p>
     </article>
@@ -76,7 +76,7 @@ export function FeaturesSection() {
     <section
       id="how-it-works"
       aria-labelledby="features-heading"
-      className="bg-white px-7 pt-28 pb-[120px] max-[760px]:px-5 max-[760px]:py-[85px]"
+      className="bg-surface px-7 pt-28 pb-[120px] max-[760px]:px-5 max-[760px]:py-[85px]"
     >
       <div className="mx-auto grid max-w-[1180px] grid-cols-2 items-end gap-[30px] max-[760px]:grid-cols-1">
         <div>
@@ -87,17 +87,17 @@ export function FeaturesSection() {
           >
             Everything in its place.
             <br />
-            <em className="font-['EB_Garamond',Georgia,serif] font-normal tracking-[-0.042em] text-[#3558c8]">
+            <em className="font-['EB_Garamond',Georgia,serif] font-normal tracking-[-0.042em] text-primary">
               Nothing in your way.
             </em>
           </h2>
         </div>
-        <p className="max-w-[435px] justify-self-end text-base leading-[1.7] text-[#687282] max-[760px]:justify-self-start">
+        <p className="max-w-[435px] justify-self-end text-base leading-[1.7] text-foreground-muted max-[760px]:justify-self-start">
           A focused editor and a live paper preview keep the writing and the
           finished page in view together.
         </p>
       </div>
-      <div className="mx-auto mt-[55px] grid max-w-[1180px] grid-cols-3 border-t border-[#d9dee6] max-[760px]:mt-[38px] max-[760px]:grid-cols-1">
+      <div className="mx-auto mt-[55px] grid max-w-[1180px] grid-cols-3 border-t border-border-subtle max-[760px]:mt-[38px] max-[760px]:grid-cols-1">
         {landingFeatures.map((feature) => (
           <FeatureCard key={feature.number} feature={feature} />
         ))}
@@ -130,7 +130,7 @@ export function AiRulesSection() {
   return (
     <section
       aria-labelledby="ai-rules-heading"
-      className="bg-[#1d273b] px-7 py-[108px] text-[#eff2fb] max-[1050px]:py-[90px] max-[760px]:px-5 max-[760px]:py-[85px]"
+      className="border-y border-transparent bg-[#1d273b] px-7 py-[108px] text-[#eff2fb] dark:border-border-subtle max-[1050px]:py-[90px] max-[760px]:px-5 max-[760px]:py-[85px]"
     >
       <div className="mx-auto grid max-w-[1180px] grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] items-center gap-[clamp(40px,7vw,100px)] max-[760px]:grid-cols-1 max-[760px]:gap-[50px]">
         <div>
@@ -175,16 +175,16 @@ export function ClosingSection() {
     <section className="mx-auto flex max-w-[1236px] items-center justify-between gap-[30px] px-7 pt-[100px] pb-28 max-[760px]:flex-wrap max-[760px]:px-5 max-[760px]:py-20">
       <div
         aria-hidden="true"
-        className="font-['EB_Garamond',Georgia,serif] text-[90px] leading-none font-bold text-[#d9dfe9] max-[760px]:text-[70px]"
+        className="font-['EB_Garamond',Georgia,serif] text-[90px] leading-none font-bold text-border-strong dark:text-foreground-subtle max-[760px]:text-[70px]"
       >
-        R<span className="text-[#3558c8]">.</span>
+        R<span className="text-primary">.</span>
       </div>
       <div>
         <SectionKicker>READY WHEN YOU ARE</SectionKicker>
         <h2 className="mt-[11px] text-[clamp(38px,4vw,56px)] leading-[1.04] font-[650] tracking-[-0.055em]">
           Make space for
           <br />
-          <em className="font-['EB_Garamond',Georgia,serif] font-normal tracking-[-0.042em] text-[#3558c8]">
+          <em className="font-['EB_Garamond',Georgia,serif] font-normal tracking-[-0.042em] text-primary">
             what comes next.
           </em>
         </h2>

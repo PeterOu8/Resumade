@@ -47,16 +47,16 @@ export function ItemList<T>({
             onChange(reordered.map(({ item }) => item));
           }}
           renderItem={({ id, item, index, label }, handle) => (
-            <div className="space-y-4 rounded-lg border-t border-[#dbe2ee] bg-[#f8faff] p-4">
+            <div className="space-y-4 rounded-lg border-t border-border-muted bg-surface-subtle p-4">
               <div className="flex items-center gap-1">
                 {handle}
-                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#273348]">{label}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground-strong">{label}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   aria-label={`Delete ${label}`}
-                  className="text-[#aa5960] hover:bg-[#fbecee] hover:text-[#9a3d48]"
+                  className="text-danger hover:bg-danger-surface hover:text-danger-foreground"
                   onClick={() => {
                     setIds((previous) => previous.filter((key) => key !== id));
                     onChange(items.filter((_, position) => position !== index));
@@ -76,7 +76,7 @@ export function ItemList<T>({
         type="button"
         variant="outline"
         size="sm"
-        className={`${editorOutlineButtonClass} mt-1 font-semibold text-[#3558c8]`}
+        className={`${editorOutlineButtonClass} mt-1 font-semibold text-primary`}
         onClick={() => {
           const id = `${listId}-${nextId.current++}`;
           setIds((previous) => [...previous, id]);

@@ -17,27 +17,27 @@ type StartChoice = {
 };
 
 const cardClassName =
-  'group flex min-h-[116px] w-full items-center gap-4 rounded-2xl border border-[#dce2ec] bg-white px-5 py-4 text-left shadow-[0_5px_20px_#27356008] transition-[border-color,background,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[#aebef0] hover:bg-[#f8faff] hover:shadow-[0_12px_30px_#27356012] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#95a9f0] motion-reduce:transition-none sm:gap-5 sm:px-6';
+  'group flex min-h-[116px] w-full items-center gap-4 rounded-2xl border border-border bg-surface px-5 py-4 text-left shadow-card transition-[border-color,background,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-focus hover:bg-surface-subtle hover:shadow-card-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus motion-reduce:transition-none sm:gap-5 sm:px-6';
 
 function ChoiceContent({ choice }: { choice: StartChoice }) {
   const Icon = choice.icon;
 
   return (
     <>
-      <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-[#eaf0ff] text-[#3558c8] sm:size-14">
+      <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-accent text-primary sm:size-14">
         <Icon size={23} strokeWidth={1.7} aria-hidden="true" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="mt-1 block text-lg font-semibold tracking-[-0.03em] text-[#273348]">
+        <span className="mt-1 block text-lg font-semibold tracking-[-0.03em] text-foreground-strong">
           {choice.title}
         </span>
-        <span className="mt-1 block text-sm leading-5 text-[#687282]">
+        <span className="mt-1 block text-sm leading-5 text-foreground-muted">
           {choice.description}
         </span>
       </span>
       <ArrowUpRight
         size={19}
-        className="shrink-0 self-start text-[#8d9bb3] transition-colors group-hover:text-[#3558c8]"
+        className="shrink-0 self-start text-foreground-subtle transition-colors group-hover:text-primary"
         aria-hidden="true"
       />
     </>

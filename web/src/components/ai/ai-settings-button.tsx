@@ -1,16 +1,17 @@
 'use client';
 
+import type { ComponentProps } from 'react';
 import { Settings2 } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import { useAiSettings } from '@/lib/ai/ai-settings';
 
-export function AiSettingsButton({ className }: { className: string }) {
+export function AiSettingsButton({ className, ...props }: Omit<ComponentProps<typeof Button>, 'children' | 'onClick'>) {
   const { openSettings } = useAiSettings();
   return (
-    <button type="button" onClick={openSettings} className={`${className} gap-2`}>
+    <Button type="button" variant="outline" size="sm" onClick={openSettings} className={className} {...props}>
       <Settings2 size={16} aria-hidden="true" />
-      <span className="hidden sm:inline">AI settings</span>
-      <span className="sm:hidden">AI</span>
-    </button>
+      AI settings
+    </Button>
   );
 }

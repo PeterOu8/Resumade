@@ -25,7 +25,7 @@ export function usePreviewDivider() {
         aria-valuemax={70}
         aria-valuenow={Math.round(editorShare)}
         tabIndex={0}
-        className="resume-divider group hidden cursor-col-resize touch-none items-stretch justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3558c8] lg:flex"
+        className="resume-divider group hidden cursor-col-resize touch-none items-stretch justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary lg:flex"
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
           resize(event.clientX);
@@ -40,7 +40,7 @@ export function usePreviewDivider() {
           setEditorShare((value) => Math.max(30, Math.min(70, value + increment)));
         }}
       >
-        <span aria-hidden="true" className="w-1 rounded-full bg-[#c9d3e5] transition-colors group-hover:bg-[#3558c8] group-focus-visible:bg-[#3558c8]" />
+        <span aria-hidden="true" className="w-1 rounded-full bg-border-strong transition-colors group-hover:bg-primary group-focus-visible:bg-primary" />
       </div>
     ),
   };

@@ -10,11 +10,11 @@ async function StartContent() {
   if (session?.user) redirect('/dashboard');
 
   return (
-    <main className="min-h-[calc(100dvh-72px)] bg-[#faf9f6] px-5 py-8 text-[#1e2636] sm:px-7 sm:py-12">
+    <main className="min-h-[calc(100dvh-72px)] bg-canvas px-5 py-8 text-foreground sm:px-7 sm:py-12">
       <div className="mx-auto grid max-w-[1280px] items-stretch gap-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-[clamp(48px,6vw,100px)]">
         <StartVisual />
         <section className="order-1 flex flex-col justify-center lg:order-2" aria-labelledby="start-heading">
-          <span className="text-[11px] font-bold tracking-[0.15em] text-[#3558c8] uppercase">
+          <span className="text-[11px] font-bold tracking-[0.15em] text-primary uppercase">
             START BUILDING
           </span>
           <h1
@@ -23,9 +23,9 @@ async function StartContent() {
           >
             How would you
             <br />
-            like to <em className="font-['EB_Garamond',Georgia,serif] font-normal text-[#3558c8]">begin?</em>
+            like to <em className="font-['EB_Garamond',Georgia,serif] font-normal text-primary">begin?</em>
           </h1>
-          <p className="mt-5 max-w-[470px] text-base leading-[1.7] text-[#687282]">
+          <p className="mt-5 max-w-[470px] text-base leading-[1.7] text-foreground-muted">
             Choose the path that fits where you are. You can shape the details in the editor.
           </p>
           <div className="mt-9">

@@ -5,7 +5,7 @@ export function ResumadeLogo() {
     <Link
       href="/"
       aria-label="Resumade home"
-      className="inline-flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#95a9f0]"
+      className="inline-flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus"
     >
       <span
         aria-hidden="true"
@@ -13,7 +13,7 @@ export function ResumadeLogo() {
       >
         R<span className="text-[#aebeff]">.</span>
       </span>
-      <span className="text-lg font-semibold tracking-[-0.04em] text-[#1e2636] sm:text-xl">
+      <span className="hidden text-base font-semibold tracking-[-0.04em] text-foreground min-[390px]:inline sm:text-xl">
         Resumade
       </span>
     </Link>

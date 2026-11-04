@@ -89,6 +89,29 @@ export function applyResumeChanges(resume: ResumeContent, changes: ResumeChange[
   return resumeContentSchema.parse(next);
 }
 
+export function getResumeChangeValue(resume: ResumeContent, path: Array<string | number>): unknown {
+  let value: unknown = resume;
+  for (const segment of path) {
+    if (!isRecord(value) && !Array.isArray(value)) return undefined;
+    value = value[segment as never];
+  }
+  return value;
+}
+
+export function isResumeChangeApplicable(resume: ResumeContent, change: ResumeChange) {
+  return JSON.stringify(getResumeChangeValue(resume, change.path)) === JSON.stringify(change.before);
+}
+
+export function applyResumeChangesSafely(resume: ResumeContent, changes: ResumeChange[]) {
+  const applicable = changes.filter((change) => isResumeChangeApplicable(resume, change));
+  const conflicts = changes.filter((change) => !isResumeChangeApplicable(resume, change));
+  return {
+    content: applyResumeChanges(resume, applicable),
+    applied: applicable,
+    conflicts,
+  };
+}
+
 export function formatChangeValue(value: unknown) {
   if (Array.isArray(value)) {
     if (!value.length) return 'None';

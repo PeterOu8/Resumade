@@ -45,19 +45,19 @@ function TemplateCard({ template }: { template: TemplateOption }) {
   return (
     <Link
       href={`/editor?style=${template.id}`}
-      className="group rounded-2xl border border-[#dce2ec] bg-white p-5 shadow-[0_5px_20px_#27356008] transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-[#aebef0] hover:shadow-[0_12px_30px_#27356012] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#95a9f0] motion-reduce:transition-none"
+      className="group rounded-2xl border border-border bg-surface p-5 shadow-card transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-focus hover:shadow-card-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus motion-reduce:transition-none"
     >
-      <div className="grid h-[245px] place-items-center overflow-hidden rounded-xl bg-[#eef1f7]">
+      <div className="grid h-[245px] place-items-center overflow-hidden rounded-xl bg-surface-muted">
         <TemplateThumbnail style={template.id} />
       </div>
       <div className="mt-5 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-[-0.03em] text-[#273348]">
+          <h2 className="text-lg font-semibold tracking-[-0.03em] text-foreground-strong">
             {layoutLabels[template.id]}
           </h2>
-          <p className="mt-1 text-sm leading-5 text-[#687282]">{template.description}</p>
+          <p className="mt-1 text-sm leading-5 text-foreground-muted">{template.description}</p>
         </div>
-        <ArrowRight size={19} className="mt-1 shrink-0 text-[#8d9bb3] group-hover:text-[#3558c8]" aria-hidden="true" />
+        <ArrowRight size={19} className="mt-1 shrink-0 text-foreground-subtle group-hover:text-primary" aria-hidden="true" />
       </div>
     </Link>
   );

@@ -32,7 +32,7 @@ export function ResumePreview({ resume, sectionOrder, settings, onSettingsChange
     <section
       id="resume-preview"
       aria-labelledby="resume-preview-heading"
-      className="resume-print-root min-w-0 scroll-mt-24 self-start overflow-hidden rounded-2xl border border-[#dfe4ed] bg-[#eef1f6] shadow-[0_18px_50px_#27356010,0_2px_10px_#27356008] lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-auto"
+      className="resume-print-root min-w-0 scroll-mt-24 self-start overflow-hidden rounded-2xl border border-border-muted bg-surface-muted shadow-[0_18px_50px_#27356010,0_2px_10px_#27356008] lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-auto"
     >
       <PreviewToolbar
         settings={settings}

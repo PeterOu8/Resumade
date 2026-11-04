@@ -7,7 +7,7 @@ import {
 
 export default function HomePage() {
   return (
-    <main className="overflow-clip bg-[#faf9f6] text-[#1e2636]">
+    <main className="overflow-clip bg-canvas text-foreground">
       <HeroSection />
       <FeaturesSection />
       <AiRulesSection />

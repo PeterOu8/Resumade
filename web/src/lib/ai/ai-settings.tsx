@@ -14,6 +14,9 @@ import { KeyRound, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { DialogCloseButton, DialogShell } from '@/components/ui/dialog-shell';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export const aiProviderSchema = z.enum([
   'openai',
@@ -204,17 +207,16 @@ function AiSettingsDialog({
   const selected = providers.find(({ value }) => value === draft.provider)!;
 
   return (
-    <dialog
+    <DialogShell
       ref={dialogRef}
       aria-labelledby="ai-settings-heading"
       onClose={onClose}
       onClick={handleBackdropClick}
-      className="fixed inset-0 m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[620px] overflow-hidden rounded-[24px] border border-[#dce2ec] bg-white p-0 text-[#1e2636] shadow-[0_28px_90px_#0d142755] backdrop:bg-[#10182acc] backdrop:backdrop-blur-[3px]"
     >
-      <div className="ai-dialog-scroll mr-3 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain">
-        <div className="flex items-start justify-between gap-4 border-b border-[#e5eaf2] px-6 py-5 sm:px-8">
+      <ScrollArea className="max-h-[calc(100dvh-2rem)]">
+        <div className="flex items-start justify-between gap-4 border-b border-border-subtle px-6 py-5 sm:px-8">
           <div>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-[0.15em] text-[#3558c8] uppercase">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-[0.15em] text-primary uppercase">
               <Sparkles size={13} aria-hidden="true" /> AI preferences
             </span>
             <h2
@@ -223,18 +225,16 @@ function AiSettingsDialog({
             >
               Connect your provider
             </h2>
-            <p className="mt-1 text-sm text-[#687282]">
+            <p className="mt-1 text-sm text-foreground-muted">
               Choose the model used for parsing and job-specific tailoring.
             </p>
           </div>
-          <button
-            type="button"
+          <DialogCloseButton
             aria-label="Close AI settings"
             onClick={() => dialogRef.current?.close()}
-            className="grid size-9 shrink-0 place-items-center rounded-lg border border-[#d7deea] text-[#687282] hover:bg-[#eef2fa] hover:text-[#273348] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#95a9f0]"
           >
             <X size={18} aria-hidden="true" />
-          </button>
+          </DialogCloseButton>
         </div>
 
         <form
@@ -245,7 +245,7 @@ function AiSettingsDialog({
           }}
         >
           <fieldset>
-            <legend className="text-sm font-semibold text-[#273348]">
+            <legend className="text-sm font-semibold text-foreground-strong">
               Provider
             </legend>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -254,8 +254,8 @@ function AiSettingsDialog({
                   key={provider.value}
                   className={`cursor-pointer rounded-xl border px-3 py-2.5 text-center text-xs font-semibold transition-colors ${
                     draft.provider === provider.value
-                      ? 'border-[#3558c8] bg-[#edf2ff] text-[#2847a9]'
-                      : 'border-[#d7deea] text-[#596579] hover:bg-[#f7f9fd]'
+                      ? 'border-primary bg-accent text-accent-foreground'
+                      : 'border-border-strong text-foreground-label hover:bg-surface-subtle'
                   }`}
                 >
                   <input
@@ -275,10 +275,10 @@ function AiSettingsDialog({
           </fieldset>
 
           <label className="block">
-            <span className="flex items-center gap-2 text-sm font-semibold text-[#273348]">
+            <span className="flex items-center gap-2 text-sm font-semibold text-foreground-strong">
               <KeyRound size={15} aria-hidden="true" /> {selected.label} API key
             </span>
-            <input
+            <Input
               type="password"
               autoComplete="off"
               value={draftKeys[draft.provider] ?? ''}
@@ -289,12 +289,12 @@ function AiSettingsDialog({
                   [draft.provider]: event.target.value,
                 })
               }
-              className="mt-2 h-11 w-full rounded-lg border border-[#d7deea] bg-white px-3 text-sm outline-none focus:border-[#3558c8] focus:ring-3 focus:ring-[#3558c8]/15"
+              className="mt-2 h-11 bg-surface px-3"
             />
-            <span className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-[#687282]">
+            <span className="mt-2 flex items-start gap-1.5 text-xs leading-5 text-foreground-muted">
               <ShieldCheck
                 size={14}
-                className="mt-0.5 shrink-0 text-[#43805c]"
+                className="mt-0.5 shrink-0 text-success-foreground"
                 aria-hidden="true"
               />
               Kept only in this browser tab. It is sent to the Resumade backend
@@ -303,8 +303,8 @@ function AiSettingsDialog({
           </label>
 
           <label className="block">
-            <span className="text-sm font-semibold text-[#273348]">Model</span>
-            <input
+            <span className="text-sm font-semibold text-foreground-strong">Model</span>
+            <Input
               type="text"
               value={draft.models[draft.provider]}
               maxLength={120}
@@ -317,19 +317,19 @@ function AiSettingsDialog({
                   },
                 })
               }
-              className="mt-2 h-11 w-full rounded-lg border border-[#d7deea] bg-white px-3 text-sm outline-none focus:border-[#3558c8] focus:ring-3 focus:ring-[#3558c8]/15"
+              className="mt-2 h-11 bg-surface px-3"
             />
-            <span className="mt-1.5 block text-xs text-[#8a94a5]">
+            <span className="mt-1.5 block text-xs text-foreground-subtle">
               Change this if your account uses a different model ID.
             </span>
           </label>
 
-          <label className="flex cursor-pointer items-start justify-between gap-5 rounded-2xl border border-[#dce3ef] bg-[#f8faff] p-4">
+          <label className="flex cursor-pointer items-start justify-between gap-5 rounded-2xl border border-border bg-surface-subtle p-4">
             <span>
-              <span className="block text-sm font-semibold text-[#273348]">
+              <span className="block text-sm font-semibold text-foreground-strong">
                 Use AI when importing PDFs
               </span>
-              <span className="mt-1 block text-xs leading-5 text-[#687282]">
+              <span className="mt-1 block text-xs leading-5 text-foreground-muted">
                 Off by default. When off, imports continue to use
                 Resumade&apos;s local rules-based parser.
               </span>
@@ -340,11 +340,11 @@ function AiSettingsDialog({
               onChange={(event) =>
                 setDraft({ ...draft, aiParsingEnabled: event.target.checked })
               }
-              className="mt-1 size-5 accent-[#3558c8]"
+              className="mt-1 size-5 accent-primary"
             />
           </label>
 
-          <div className="flex justify-end gap-2 border-t border-[#e9edf3] pt-5">
+          <div className="flex justify-end gap-2 border-t border-border-faint pt-5">
             <Button
               type="button"
               variant="outline"
@@ -356,13 +356,13 @@ function AiSettingsDialog({
             <Button
               type="submit"
               size="lg"
-              className="bg-[#3558c8] px-5 text-white hover:bg-[#2847a9]"
+              className="bg-primary px-5 text-primary-foreground hover:bg-primary-hover"
             >
               Save settings
             </Button>
           </div>
         </form>
-      </div>
-    </dialog>
+      </ScrollArea>
+    </DialogShell>
   );
 }

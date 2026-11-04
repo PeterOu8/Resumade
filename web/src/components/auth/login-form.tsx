@@ -21,7 +21,7 @@ import { AuthError } from 'next-auth';
 import { redirect } from 'next/navigation';
 
 const inputClassName =
-  'h-11 rounded-lg border-[#d7deea] bg-[#fbfcfe] px-3 text-[#273348] placeholder:text-[#9aa4b1] focus-visible:border-[#3558c8] focus-visible:ring-[#3558c8]/15';
+  'h-11 rounded-lg border-border-strong bg-surface px-3 text-foreground-strong placeholder:text-foreground-faint focus-visible:border-primary focus-visible:ring-primary/15';
 
 async function signInWithGoogle() {
   'use server';
@@ -55,18 +55,18 @@ export function LoginForm({
 }: React.ComponentProps<'div'>) {
   return (
     <div className={cn('min-w-0', className)} {...props}>
-      <Card className="gap-0 rounded-2xl border border-[#dce2ec] bg-white py-0 text-[#1e2636] shadow-[0_20px_55px_#27356012] ring-0">
+      <Card className="gap-0 rounded-2xl border border-border bg-card py-0 text-foreground shadow-panel ring-0">
         <CardHeader className="gap-0 px-6 pt-7 pb-0 sm:px-8 sm:pt-9">
-          <span className="text-[11px] font-bold tracking-[0.15em] text-[#3558c8] uppercase">
+          <span className="text-[11px] font-bold tracking-[0.15em] text-primary uppercase">
             WELCOME TO RESUMADE
           </span>
           <h1 className="mt-3 text-[clamp(34px,4vw,44px)] leading-[1.05] font-[650] tracking-[-0.05em]">
             Welcome{' '}
-            <em className="font-['EB_Garamond',Georgia,serif] font-normal text-[#3558c8]">
+            <em className="font-['EB_Garamond',Georgia,serif] font-normal text-primary">
               back.
             </em>
           </h1>
-          <CardDescription className="mt-3 text-sm leading-6 text-[#687282]">
+          <CardDescription className="mt-3 text-sm leading-6 text-foreground-muted">
             Sign in to pick up where you left off.
           </CardDescription>
         </CardHeader>
@@ -77,7 +77,7 @@ export function LoginForm({
                 <Button
                   variant="outline"
                   type="submit"
-                  className="h-11 w-full rounded-lg border-[#d7deea] bg-white text-sm font-semibold text-[#273348] hover:bg-[#eef2fa] focus-visible:border-[#3558c8] focus-visible:ring-[#3558c8]/15"
+                  className="h-11 w-full rounded-lg border-border-strong bg-surface text-sm font-semibold text-foreground-strong hover:bg-surface-hover focus-visible:border-primary focus-visible:ring-primary/15"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -93,7 +93,7 @@ export function LoginForm({
                 </Button>
               </Field>
             </form>
-            <FieldSeparator className="my-1 [&_[data-slot=field-separator-content]]:bg-white [&_[data-slot=field-separator-content]]:text-[#8b96a9]">
+            <FieldSeparator className="my-1 [&_[data-slot=field-separator-content]]:bg-card [&_[data-slot=field-separator-content]]:text-foreground-subtle">
               Or continue with
             </FieldSeparator>
             <form action={signInWithPassword}>
@@ -101,7 +101,7 @@ export function LoginForm({
                 <Field>
                   <FieldLabel
                     htmlFor="email"
-                    className="text-xs font-semibold text-[#566173]"
+                    className="text-xs font-semibold text-foreground-label"
                   >
                     Email
                   </FieldLabel>
@@ -118,13 +118,13 @@ export function LoginForm({
                   <div className="flex items-center">
                     <FieldLabel
                       htmlFor="password"
-                      className="text-xs font-semibold text-[#566173]"
+                      className="text-xs font-semibold text-foreground-label"
                     >
                       Password
                     </FieldLabel>
                     <a
                       href="#"
-                      className="ml-auto text-xs font-medium text-[#687282] underline-offset-4 hover:text-[#3558c8] hover:underline"
+                      className="ml-auto text-xs font-medium text-foreground-muted underline-offset-4 hover:text-primary hover:underline"
                     >
                       Forgot your password?
                     </a>
@@ -140,11 +140,11 @@ export function LoginForm({
                 <Field>
                   <Button
                     type="submit"
-                    className="mt-2 h-11 w-full rounded-lg bg-[#3558c8] text-sm font-semibold text-white shadow-[0_8px_22px_#3558c82d] hover:bg-[#2847a9] focus-visible:border-[#3558c8] focus-visible:ring-[#3558c8]/20"
+                    className="mt-2 h-11 w-full rounded-lg bg-primary text-sm font-semibold text-primary-foreground shadow-accent hover:bg-primary-hover focus-visible:border-primary focus-visible:ring-primary/20"
                   >
                     Sign in
                   </Button>
-                  <FieldDescription className="mt-1 text-center text-sm text-[#687282] [&>a]:font-semibold [&>a]:text-[#3558c8]">
+                  <FieldDescription className="mt-1 text-center text-sm text-foreground-muted [&>a]:font-semibold [&>a]:text-primary">
                     Don&apos;t have an account?{' '}
                     <Link href="/signup">Sign up</Link>
                   </FieldDescription>

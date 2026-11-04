@@ -16,7 +16,7 @@ export function TextField({ label, value, onChange, className, ...props }: TextF
   const id = useId();
   return (
     <Field className={className}>
-      <FieldLabel htmlFor={id} className="text-xs font-semibold text-[#566173]">
+      <FieldLabel htmlFor={id} className="text-xs font-semibold text-foreground-label">
         {label}
       </FieldLabel>
       <Input
@@ -56,10 +56,10 @@ export function DateRangeFields({
         disabled={value.current}
         onChange={(endDate) => onChange({ ...value, endDate })}
       />
-      <label className="flex items-center gap-2 text-sm text-[#566173] sm:col-span-2">
+      <label className="flex items-center gap-2 text-sm text-foreground-label sm:col-span-2">
         <input
           type="checkbox"
-          className="accent-[#3558c8]"
+          className="accent-primary"
           checked={value.current}
           onChange={(event) => onChange({ ...value, current: event.target.checked })}
         />
@@ -84,7 +84,7 @@ export function TextListField({
 }) {
   return (
     <fieldset className="min-w-0 pt-4">
-      <legend className="mb-2 text-sm font-semibold text-[#273348]">{label}</legend>
+      <legend className="mb-2 text-sm font-semibold text-foreground-strong">{label}</legend>
       <ItemList
         items={items}
         onChange={onChange}
