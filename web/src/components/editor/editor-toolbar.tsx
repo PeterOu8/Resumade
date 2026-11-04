@@ -1,26 +1,49 @@
 'use client';
 
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileUp, Redo2, Save, Undo2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+import { editorOutlineButtonClass } from './editor-styles';
 
 type Props = {
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  onImport: () => void;
+  canSaveToAccount: boolean;
+  saving: boolean;
+  onSave: () => void;
 };
 
-export function EditorToolbar({ canUndo, canRedo, onUndo, onRedo }: Props) {
+export function EditorToolbar({
+  canUndo, canRedo, onUndo, onRedo, onImport, canSaveToAccount, saving, onSave,
+}: Props) {
+  const router = useRouter();
+
+  function goBack() {
+    const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;
+    const canGoBack = navigation?.canGoBack ?? window.history.length > 1;
+
+    if (canGoBack) {
+      router.back();
+    } else {
+      router.replace('/');
+    }
+  }
+
   return (
-    <div className="resume-editor-toolbar flex flex-wrap items-center justify-between gap-3 border-b pb-4">
+    <div className="resume-editor-toolbar flex flex-wrap items-center justify-between gap-3">
       <div>
         <Button
-          nativeButton={false}
+          type="button"
           size="sm"
-          variant="ghost"
-          render={<Link href="/" />}
+          variant="outline"
+          onClick={goBack}
+          className={editorOutlineButtonClass}
         >
           <ArrowLeft aria-hidden="true" /> Back
         </Button>
@@ -30,8 +53,9 @@ export function EditorToolbar({ canUndo, canRedo, onUndo, onRedo }: Props) {
           type="button"
           size="sm"
           variant="outline"
-          disabled
-          title="Import is coming soon"
+          disabled={saving}
+          onClick={onImport}
+          className={editorOutlineButtonClass}
         >
           <FileUp aria-hidden="true" /> Import
         </Button>
@@ -40,8 +64,9 @@ export function EditorToolbar({ canUndo, canRedo, onUndo, onRedo }: Props) {
           size="icon-sm"
           variant="outline"
           aria-label="Undo"
-          disabled={!canUndo}
+          disabled={!canUndo || saving}
           onClick={onUndo}
+          className={cn(editorOutlineButtonClass, 'w-9 px-0')}
         >
           <Undo2 aria-hidden="true" />
         </Button>
@@ -50,8 +75,9 @@ export function EditorToolbar({ canUndo, canRedo, onUndo, onRedo }: Props) {
           size="icon-sm"
           variant="outline"
           aria-label="Redo"
-          disabled={!canRedo}
+          disabled={!canRedo || saving}
           onClick={onRedo}
+          className={cn(editorOutlineButtonClass, 'w-9 px-0')}
         >
           <Redo2 aria-hidden="true" />
         </Button>
@@ -59,10 +85,12 @@ export function EditorToolbar({ canUndo, canRedo, onUndo, onRedo }: Props) {
           type="button"
           size="sm"
           variant="outline"
-          disabled
-          title="Account save is coming soon"
+          disabled={!canSaveToAccount || saving}
+          title={canSaveToAccount ? undefined : 'Sign in to save to your account'}
+          onClick={onSave}
+          className={editorOutlineButtonClass}
         >
-          <Save aria-hidden="true" /> Save
+          <Save aria-hidden="true" /> {saving ? 'Saving…' : 'Save'}
         </Button>
       </div>
     </div>

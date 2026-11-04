@@ -18,7 +18,8 @@ type RichTextEditorProps = RichTextFieldProps & {
 };
 
 const extensions = [StarterKit];
-const editorSurface = 'w-full min-w-0 rounded-t-lg border-b border-foreground/25 bg-foreground/[0.07] focus-within:border-foreground dark:bg-foreground/10';
+const editorSurface =
+  'w-full min-w-0 overflow-hidden rounded-t-lg border-b-2 border-[#8ca0d8] bg-[#edf1fa] text-[#273348] focus-within:border-[#3558c8]';
 const editorPlaceholder = <div className={`${editorSurface} min-h-24`} />;
 
 function toEditorHtml(value: string): string {
@@ -124,7 +125,7 @@ function RichTextField({
   return (
     <div className={editable ? editorSurface : undefined}>
       {editable && (
-        <div role="group" aria-label={`${label} formatting`} className="flex items-center gap-1 rounded-t-lg bg-foreground/[0.05] p-1">
+        <div role="group" aria-label={`${label} formatting`} className="flex items-center gap-1 border-b border-[#d8e0f0] bg-[#e7ecf7] p-1">
           <Button
             type="button"
             size="icon"

@@ -3,6 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
+import { editorOutlineButtonClass } from './editor-styles';
 import { SortableList } from './sortable-list';
 
 type ItemListProps<T> = {
@@ -34,7 +35,7 @@ export function ItemList<T>({
   }));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {rows.length > 0 && (
         <SortableList
           items={rows}
@@ -46,16 +47,16 @@ export function ItemList<T>({
             onChange(reordered.map(({ item }) => item));
           }}
           renderItem={({ id, item, index, label }, handle) => (
-            <div className="space-y-3 rounded-lg border p-3">
+            <div className="space-y-4 rounded-lg border-t border-[#dbe2ee] bg-[#f8faff] p-4">
               <div className="flex items-center gap-1">
                 {handle}
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{label}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#273348]">{label}</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
                   aria-label={`Delete ${label}`}
-                  className="text-destructive hover:text-destructive"
+                  className="text-[#aa5960] hover:bg-[#fbecee] hover:text-[#9a3d48]"
                   onClick={() => {
                     setIds((previous) => previous.filter((key) => key !== id));
                     onChange(items.filter((_, position) => position !== index));
@@ -75,6 +76,7 @@ export function ItemList<T>({
         type="button"
         variant="outline"
         size="sm"
+        className={`${editorOutlineButtonClass} mt-1 font-semibold text-[#3558c8]`}
         onClick={() => {
           const id = `${listId}-${nextId.current++}`;
           setIds((previous) => [...previous, id]);

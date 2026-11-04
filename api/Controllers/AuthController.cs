@@ -33,9 +33,9 @@ namespace Resumade.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPost("login")]
+        [HttpPost("signin")]
         [EnableRateLimiting("auth")]
-        public async Task<ActionResult<AuthResponse>> Login(SignInDto dto)
+        public async Task<ActionResult<AuthResponse>> SignIn(SignInDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Password))
                 return BadRequest("Email and password are required.");

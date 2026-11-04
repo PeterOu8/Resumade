@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Resumade">
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="#1d273b"/>
+  <text x="11" y="47" fill="#ffffff" font-family="Georgia, 'Times New Roman', serif" font-size="49" font-weight="700">R</text>
+  <circle cx="51" cy="46" r="4.5" fill="#aebeff"/>
+</svg>

@@ -41,11 +41,23 @@ internal static class SectionGrouper
         ["extracurricular activities"] = SectionKind.Unknown
     };
 
-    private static string Normalize(string name) =>
+    private static string Normalise(string name) =>
         Regex.Replace(name.Trim().TrimEnd(':').Replace("&", "and"), @"\s+", " ");
 
-    internal static SectionKind Classify(string name) =>
-        Headings.GetValueOrDefault(Normalize(name), SectionKind.Unknown);
+    internal static SectionKind Classify(string name)
+    {
+        var sectionName = Normalise(name);
+
+        if (Headings.TryGetValue(sectionName, out var kind))
+            return kind;
+
+        if (sectionName.EndsWith("skills", StringComparison.OrdinalIgnoreCase))
+        {
+            return SectionKind.Skills;
+        }
+
+        return SectionKind.Unknown;
+    }
 
     public static List<Section> GroupLinesToSections(List<Line> lines)
     {
@@ -75,8 +87,8 @@ internal static class SectionGrouper
             var text = ExtractionText.Text(line);
             // "Languages:" can also be a category inside a skills section.
             var skillCategory = Classify(name) == SectionKind.Skills &&
-                                Normalize(text).Equals("Languages", StringComparison.OrdinalIgnoreCase);
-            if (!skillCategory && (Headings.ContainsKey(Normalize(text)) ||
+                                Normalise(text).Equals("Languages", StringComparison.OrdinalIgnoreCase);
+            if (!skillCategory && (Headings.ContainsKey(Normalise(text)) ||
                 (i > firstContentLine && IsUnfamiliarHeading(lines, i, knownHeadings, bodyHeight))))
             {
                 Flush();

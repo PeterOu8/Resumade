@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Resumade.Api.Data;
 using Resumade.Api.Services.Auth;
+using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Resume;
 using Scalar.AspNetCore;
@@ -48,6 +49,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ResumeService>();
 builder.Services.AddScoped<ResumeParserService>();
+builder.Services.AddSingleton<ResumeGenerationService>();
 
 // JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"]

@@ -1,47 +1,27 @@
 # Resumade
 
-Resumade is a resume preparation application in development. Its backend is a controller-based ASP.NET Core 10 API with JWT authentication, EF Core, and PostgreSQL for accounts and saved resumes.
+Resumade is a web app for building and revising resumes. Start from a template or import an existing PDF, edit each section alongside a live preview, and download a PDF with selectable text.
 
-## Backend layout
+![Resumade landing page with an illustration of the editor and live resume preview](docs/screenshots/landing.png)
 
-```text
-api/                         ASP.NET Core 10 API
-  Controllers/               Health, authentication, and resume endpoints
-  Data/                      EF Core database context
-  Dtos/                      Request and response contracts
-  Models/                    User and resume persistence models
-  Migrations/                PostgreSQL schema migrations
-  Services/                  Authentication, resume CRUD, and parser helpers
-tests/Resumade.Api.Tests/     Parser unit tests and API integration tests
-Resumade.Api.slnx             Backend and test solution
-```
+## What you can do
 
-## Local development
+- **Start with a template or an existing PDF.** Choose Classic, Modern, or Custom, or import a PDF with selectable text and review the extracted fields.
+- **Edit with a live preview.** Reorder sections and entries by dragging, format descriptions with rich text, and adjust the paper size, colours, and margins.
+- **Download your current draft.** Guests and signed-in users can export a PDF using the preview’s layout and styling.
+- **Save resumes to an account.** Sign in to open and manage saved resumes from the dashboard.
 
-Use the .NET 10 SDK and a local PostgreSQL database for persisted accounts and resumes. Database migration commands also require the EF Core CLI. See [backend development setup](docs/development.md) for configuration and the full startup sequence.
+![Resume editor showing Alex Morgan's sample profile and summary alongside a Modern resume preview](docs/screenshots/editor.png)
 
-After configuring the API environment variables and applying migrations:
+[See the page gallery](docs/screenshots.md) for the start flow, templates, account pages, and dashboard. Screenshots use fictional resume data.
 
-```powershell
-# From the repository root
-dotnet restore Resumade.Api.slnx
-dotnet build Resumade.Api.slnx --no-restore
-dotnet run --project api/Resumade.Api.csproj --launch-profile https
-```
+## For developers
 
-The API HTTPS profile uses `https://localhost:7131` and `http://localhost:5011`. Development API documentation is served at `/scalar/v1`, with the OpenAPI document at `/openapi/v1.json`.
-
-## Current capabilities and limits
-
-| Area | Current implementation |
+| Part | Stack |
 | --- | --- |
-| Accounts | API registration, login, and current-token claims using JWT bearer authentication. |
-| Saved resumes | Authenticated create, list, retrieve, replace, and delete operations scoped to the token's user. |
-| Persistence | User records and serialized resume content, with explicit EF Core migrations. |
-| Health | Public `/api/health` endpoint reporting process health without querying the database. |
-| Resume parsing | Authenticated text-item JSON input grouped into sections and extracted into structured resume content. |
-| Automated tests | Section extraction fixtures, parser pipeline checks, parse endpoint validation/authentication, and health. |
+| [Web app](web/) | Next.js, React, TypeScript, Tailwind CSS, and Auth.js |
+| [API](api/) | ASP.NET Core 10, EF Core, PostgreSQL, and JWT bearer authentication |
+| PDF workflow | PDF.js extracts text in the browser. The API parses it and uses PuppeteerSharp with Chromium to export the styled preview. |
+| [API tests](tests/Resumade.Api.Tests/) | xUnit integration tests for health and guest PDF export |
 
-The API does not currently expose profile editing, document storage/upload, resume versioning, tailoring, or PDF export endpoints. Parsing accepts frontend-extracted text items rather than uploaded files. `FileStorage:RootPath` is present in configuration but is not used by the running API.
-
-See [development setup and checks](docs/development.md) and the [API reference and data model](docs/api.md).
+[Run Resumade locally](docs/development.md) · [Read the API reference](docs/api.md)

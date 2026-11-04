@@ -1,8 +1,13 @@
 'use client';
 
-import {
-  type ResumeContent,
-} from '@/lib/resume/resume.schema';
+import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { createPreviewHtml } from '@/lib/pdf/preview-html';
+import { saveResume } from '@/lib/resume/save-resume';
+import type { ResumeContent, ResumeDraft } from '@/lib/resume/resume.schema';
+import { ImportPdfDialog } from '@/components/start/import-pdf-dialog';
+import { toast } from '@/components/ui/toast';
 
 import { TextField } from './editor-fields';
 import { EditorSection } from './editor-section';
@@ -15,7 +20,7 @@ import {
   SkillEditor,
 } from './item-editors';
 import { ItemList } from './item-list';
-import { sectionTitles } from './preview/constants';
+import { sectionTitles, type PreviewSettings } from './preview/constants';
 import { ResumePreview } from './preview/resume-preview';
 import { RichTextEditor } from './rich-text-editor';
 import { SortableList } from './sortable-list';
@@ -37,17 +42,120 @@ const profileFields = [
   type?: string;
 }>;
 
-export function ResumeEditor() {
-  const document = useResumeDocument();
+export function ResumeEditor({
+  initialStyle,
+  initialImportId,
+  initialDraft,
+  draftScope,
+  resumeId,
+  canSaveToAccount = false,
+}: {
+  initialStyle?: PreviewSettings['style'];
+  initialImportId?: string;
+  initialDraft?: ResumeDraft;
+  draftScope?: string;
+  resumeId?: string;
+  canSaveToAccount?: boolean;
+}) {
+  const router = useRouter();
+  const document = useResumeDocument({
+    initialStyle,
+    initialImportId,
+    initialDraft,
+    draftScope,
+  });
+  const [importOpen, setImportOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const saveInFlight = useRef(false);
   const { draft, sectionOrder } = document;
   const { workspaceRef, editorShare, divider } = usePreviewDivider();
   const { content } = draft;
+
+  async function downloadPdf() {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const title = draft.title.trim() || content.profile.fullName.trim() || 'Resume';
+      const html = await createPreviewHtml(title, document.settings);
+      const response = await fetch('/api/resumes/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.slice(0, 200), html }),
+      });
+      if (!response.ok) {
+        const result: unknown = await response.json().catch(() => null);
+        const message =
+          result &&
+          typeof result === 'object' &&
+          'error' in result &&
+          typeof result.error === 'string'
+            ? result.error
+            : 'Could not generate the PDF.';
+        throw new Error(message);
+      }
+
+      const pdf = await response.blob();
+      const url = URL.createObjectURL(pdf);
+      const link = window.document.createElement('a');
+      link.href = url;
+      link.download = `${title.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').slice(0, 120)}.pdf`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    } catch (error) {
+      toast.add({
+        title: 'PDF could not be downloaded',
+        description:
+          error instanceof Error ? error.message : 'Try again in a moment.',
+        type: 'error',
+      });
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  async function saveToAccount() {
+    if (!canSaveToAccount || saveInFlight.current) return;
+    saveInFlight.current = true;
+    setSaving(true);
+    let openingSavedResume = false;
+    try {
+      const result = await saveResume(draft, resumeId);
+      if (result.error) {
+        toast.add({
+          title: 'Resume could not be saved',
+          description: result.error,
+          type: 'error',
+        });
+      } else {
+        toast.add({ title: 'Resume saved', type: 'success' });
+        if (!resumeId) {
+          router.replace(`/editor?resume=${result.id}`);
+          openingSavedResume = true;
+        }
+      }
+    } catch {
+      toast.add({
+        title: 'Resume could not be saved',
+        description: 'Try again in a moment.',
+        type: 'error',
+      });
+    } finally {
+      if (!openingSavedResume) {
+        saveInFlight.current = false;
+        setSaving(false);
+      }
+    }
+  }
 
   function updateContent<K extends keyof ResumeContent>(
     key: K,
     value: ResumeContent[K],
   ) {
-    document.updateDraft({ ...draft, content: { ...content, [key]: value } }, `Edit ${key}`);
+    document.updateDraft(
+      { ...draft, content: { ...content, [key]: value } },
+      `Edit ${key}`,
+    );
   }
 
   const sectionContent = {
@@ -138,64 +246,94 @@ export function ResumeEditor() {
   return (
     <main
       ref={workspaceRef}
-      className="resume-editor-workspace mx-auto grid w-full max-w-screen-2xl items-start gap-6 px-4 py-8 sm:px-6 lg:gap-2"
-      style={{ gridTemplateColumns: `minmax(0, ${editorShare}fr) 10px minmax(0, ${100 - editorShare}fr)` }}
+      className="resume-editor-workspace mx-auto grid w-full max-w-[1500px] items-start gap-6 px-4 py-8 text-[#1e2636] sm:px-7 sm:py-10 lg:gap-4"
+      style={{
+        gridTemplateColumns: `minmax(0, ${editorShare}fr) 10px minmax(0, ${100 - editorShare}fr)`,
+      }}
     >
-      <div className="resume-editor-heading col-span-full space-y-4">
-        <EditorToolbar canUndo={document.canUndo} canRedo={document.canRedo} onUndo={document.undo} onRedo={document.redo} />
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">Resume editor</h1>
-          <p className="text-sm text-muted-foreground">
-            Edit your resume and drag sections into the order you want.
-          </p>
-          <a href="#resume-preview" className="text-sm underline underline-offset-4 lg:hidden">Jump to preview</a>
-        </div>
-      </div>
-      <div className="resume-editor-form min-w-0 space-y-5">
-        <div key={document.generation} className="space-y-5">
-        <TextField
-          label="Document title"
-          value={draft.title}
-          placeholder="e.g. Software Engineer Resume"
-          onChange={(title) => document.updateDraft({ ...draft, title }, 'Edit document title')}
+      <div className="resume-editor-heading col-span-full space-y-7 pb-2">
+        <EditorToolbar
+          canUndo={document.canUndo}
+          canRedo={document.canRedo}
+          onUndo={document.undo}
+          onRedo={document.redo}
+          onImport={() => setImportOpen(true)}
+          canSaveToAccount={canSaveToAccount}
+          saving={saving}
+          onSave={() => void saveToAccount()}
         />
-        <div>
-          <EditorSection title="Profile" initiallyOpen>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {profileFields.map(({ key, label, ...inputProps }) => (
-                <TextField
-                  key={key}
-                  label={label}
-                  value={content.profile[key]}
-                  onChange={(value) =>
-                    updateContent('profile', { ...content.profile, [key]: value })
-                  }
-                  {...inputProps}
-                />
-              ))}
-            </div>
-          </EditorSection>
-          <SortableList
-            items={sectionOrder}
-            getId={(key) => key}
-            getLabel={(key) => sectionTitles[key]}
-            onReorder={document.updateSectionOrder}
-            renderItem={(key, handle) => (
-              <EditorSection
-                title={sectionTitles[key]}
-                count={key === 'summary' ? undefined : content[key].length}
-                initiallyOpen={key === 'summary'}
-                handle={handle}
-              >
-                {sectionContent[key]}
-              </EditorSection>
-            )}
+        <div className="space-y-2"></div>
+      </div>
+      <div
+        inert={saving}
+        className="resume-editor-form min-w-0 rounded-2xl bg-white p-4 shadow-[0_18px_50px_#2735600c,0_2px_10px_#27356008] sm:p-6"
+      >
+        <div key={document.generation} className="space-y-6">
+          <TextField
+            label="Document title"
+            value={draft.title}
+            placeholder="e.g. Software Engineer Resume"
+            onChange={(title) =>
+              document.updateDraft({ ...draft, title }, 'Edit document title')
+            }
           />
-        </div>
+          <div>
+            <EditorSection title="Profile" initiallyOpen>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {profileFields.map(({ key, label, ...inputProps }) => (
+                  <TextField
+                    key={key}
+                    label={label}
+                    value={content.profile[key]}
+                    onChange={(value) =>
+                      updateContent('profile', {
+                        ...content.profile,
+                        [key]: value,
+                      })
+                    }
+                    {...inputProps}
+                  />
+                ))}
+              </div>
+            </EditorSection>
+            <SortableList
+              items={sectionOrder}
+              getId={(key) => key}
+              getLabel={(key) => sectionTitles[key]}
+              onReorder={document.updateSectionOrder}
+              renderItem={(key, handle) => (
+                <EditorSection
+                  title={sectionTitles[key]}
+                  count={key === 'summary' ? undefined : content[key].length}
+                  initiallyOpen={key === 'summary'}
+                  handle={handle}
+                >
+                  {sectionContent[key]}
+                </EditorSection>
+              )}
+            />
+          </div>
         </div>
       </div>
       {divider}
-      <ResumePreview resume={content} sectionOrder={sectionOrder} settings={document.settings} onSettingsChange={document.updateSettings} saveStatus={document.status} />
+      <ResumePreview
+        resume={content}
+        sectionOrder={sectionOrder}
+        settings={document.settings}
+        onSettingsChange={document.updateSettings}
+        saveStatus={resumeId ? undefined : document.status}
+        downloading={downloading}
+        onDownload={() => void downloadPdf()}
+      />
+      <ImportPdfDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={(imported) => {
+          document.importDraft(imported, 'Import PDF');
+          setImportOpen(false);
+          toast.add({ title: 'Resume imported', type: 'success' });
+        }}
+      />
     </main>
   );
 }

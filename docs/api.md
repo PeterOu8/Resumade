@@ -7,8 +7,9 @@ The ASP.NET Core API lives in `api/`. Local HTTPS examples use `https://localhos
 | Method | Route                | Authentication | Success response                                                     |
 | ------ | -------------------- | -------------- | -------------------------------------------------------------------- |
 | GET    | `/api/health`        | None           | `200` with `status: "healthy"` and `service: "Resumade API"`.        |
-| POST   | `/api/auth/register` | None           | `200` with token, user ID, email, and display name.                  |
-| POST   | `/api/auth/login`    | None           | `200` with the same authentication response.                         |
+| POST   | `/api/auth/register` | None           | `200` with an access token and user details.                         |
+| POST   | `/api/auth/signin`   | None           | `200` with the same authentication response.                         |
+| POST   | `/api/auth/google`   | Google ID token | `200` with the same authentication response. Accepts `{ "idToken": "…" }`. |
 | GET    | `/api/auth/me`       | Bearer token   | `200` with user ID, email, and display name from the token's claims. |
 
 Registration accepts:
@@ -21,26 +22,28 @@ Registration accepts:
 }
 ```
 
-Login accepts `email` and `password` only. Email is required, must be an email address, and has a maximum length of 254 characters. Registration requires a password of 8 to 128 characters and a display name of at most 100 characters. Login requires a password of at most 128 characters.
+Sign-in accepts `email` and `password`. Email is required and has a maximum length of 254 characters. Registration requires a password of 8 to 128 characters and a display name of at most 100 characters. Sign-in requires a password of at most 128 characters.
 
 The service trims and lowercases email addresses, trims display names on registration, and stores hashed passwords. Successful registration and login return:
 
 ```json
 {
-  "token": "<jwt>",
-  "userId": "<user-guid>",
-  "email": "developer@example.test",
-  "displayName": "Example Developer"
+  "accessToken": "<jwt>",
+  "user": {
+    "userId": "<user-guid>",
+    "email": "developer@example.test",
+    "displayName": "Example Developer"
+  }
 }
 ```
 
 Tokens use HMAC-SHA256 and expire one hour after issuance. Protected requests must include `Authorization: Bearer <jwt>`. Issuer, audience, lifetime, and signing key are validated. There is no refresh-token or logout endpoint.
 
-Registration returns `409` for an already registered email; login returns `401` for invalid credentials. Invalid request DTOs return `400`. Authentication actions declare an `auth` rate-limiting policy attribute, but the application has no registered rate-limiting policy or middleware.
+Registration returns `409` for an already registered email. Sign-in returns `401` for invalid credentials or a rejected Google ID token. Invalid request DTOs return `400`. The web app manages sign-out through Auth.js.
 
 ## Saved resumes
 
-All resume endpoints require a bearer token. The authenticated user's ID comes from the token; clients do not supply an owner ID.
+Saved-resume operations require a bearer token. The authenticated user's ID comes from the token. PDF export is available to guests.
 
 | Method | Route               | Behavior                                                                                  |
 | ------ | ------------------- | ----------------------------------------------------------------------------------------- |
@@ -110,9 +113,15 @@ Resume responses contain `id`, `title`, the structured `content` object, `create
 
 The content fields are defined in `api/Dtos/Resumes/ResumeContentDto.cs`. Experience and education dates are strings: the example uses `YYYY-MM`, but the DTOs do not validate a date format or enforce consistency between `current` and `endDate`. There is no deeper field validation on the nested content DTOs.
 
+## PDF export
+
+`POST /api/resumes/pdf` accepts a JSON object with `title` and self-contained preview `html`. Guests and signed-in users can export the current draft. Chromium uses the preview's print styles, paper size, margins, and embedded web fonts. The response is an `application/pdf` attachment with selectable text and `Cache-Control: no-store`.
+
+The API accepts titles up to 200 characters and HTML up to 1,000,000 characters, with a 2,000,000-byte request limit. Use inline styles and embedded fonts. The renderer disables scripts and blocks external resource requests. See [local development](development.md#start-the-api) for browser configuration.
+
 ## Resume content extraction
 
-`POST /api/resumes/parse` requires a bearer token and accepts the existing array of frontend-extracted text items:
+`POST /api/resumes/parse` is available to guests and accepts an array of text items extracted by PDF.js:
 
 ```json
 [

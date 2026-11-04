@@ -1,78 +1,68 @@
-# Backend development setup
+# Local development
 
-Run commands from the repository root unless a section changes directory. These instructions describe the checked-in implementation and its existing dependencies.
+Run the API and web app in separate terminals. The commands below use PowerShell from the repository root.
 
 ## Prerequisites
 
-- .NET 10 SDK for the API and test project.
-- PostgreSQL and an existing local database for accounts and saved resumes.
-- EF Core CLI compatible with the API's EF Core 10 packages to apply migrations.
+- Node.js 22.13+ or 24+, and npm.
+- .NET 10 SDK and EF Core CLI 10.x. Install the CLI with `dotnet tool install --global dotnet-ef --version "10.*"` if you do not already have it.
+- PostgreSQL with a local database named `resumade` and credentials that can apply migrations.
+- Chrome or Chromium for PDF export and its integration test. PuppeteerSharp can also download Chromium on first use.
 
-## API configuration
+## Start the API
 
-`api/Program.cs` reads these settings:
-
-| Setting | Environment variable | Purpose |
-| --- | --- | --- |
-| `ConnectionStrings:ResumadeDatabase` | `ConnectionStrings__ResumadeDatabase` | PostgreSQL connection string. |
-| `Jwt:Key` | `Jwt__Key` | Signing key for HMAC-SHA256 bearer tokens; use at least 32 random ASCII characters. |
-| `Jwt:Issuer` | `Jwt__Issuer` | Token issuer; checked-in default is `Resumade`. |
-| `Jwt:Audience` | `Jwt__Audience` | Token audience; checked-in default is `ResumadeUsers`. |
-
-For a local PowerShell session, replace the example values:
+Set the database connection and a local JWT signing key of at least 32 ASCII characters. Keep credentials in your shell environment or the API project's .NET user secrets.
 
 ```powershell
 $env:ConnectionStrings__ResumadeDatabase = 'Host=localhost;Port=5432;Database=resumade;Username=<local-user>;Password=<local-password>'
 $env:Jwt__Key = '<replace-with-a-random-local-signing-key-of-at-least-32-characters>'
-$env:Jwt__Issuer = 'Resumade'
-$env:Jwt__Audience = 'ResumadeUsers'
-```
+# Optional. Point PuppeteerSharp at a locally installed browser.
+# $env:PUPPETEER_EXECUTABLE_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
 
-The API project also has a `UserSecretsId` for development configuration. Keep local credentials out of committed configuration. The examples above set values only for the current terminal and processes launched from it.
-
-`Jwt:Key` must be configured for startup. `Program.cs` rejects a null database connection string; supply a usable connection string before invoking database-backed endpoints. The health endpoint does not query PostgreSQL.
-
-## Build and start the API
-
-```powershell
 dotnet restore Resumade.Api.slnx
-dotnet build Resumade.Api.slnx --no-restore
-dotnet ef database update --project api/Resumade.Api.csproj
-dotnet run --project api/Resumade.Api.csproj --launch-profile https
+dotnet ef database update --project api/Resumade.Api.csproj -- --environment Development
+dotnet run --project api/Resumade.Api.csproj --launch-profile http
 ```
 
-Apply migrations against the intended local development database. The API does not automatically apply them on startup. The `SimplifyResume` migration drops the former `IsPrimary`, `Style`, and `ThemeColor` columns.
+The API listens at [localhost:5011](http://localhost:5011). Check [health](http://localhost:5011/api/health), browse the [interactive API reference](http://localhost:5011/scalar/v1), or open the [OpenAPI document](http://localhost:5011/openapi/v1.json).
 
-| Launch profile | Listening addresses |
-| --- | --- |
-| `http` | `http://localhost:5011` |
-| `https` | `https://localhost:7131` and `http://localhost:5011` |
+Apply migrations to the intended local database before testing account operations. The API applies migrations only when you run the EF command. `SimplifyResume` removes the former `IsPrimary`, `Style`, and `ThemeColor` columns.
 
-Both profiles set the environment to `Development`. The pipeline includes HTTPS redirection. If your machine has not trusted the local development certificate, run `dotnet dev-certs https --trust` before accessing HTTPS.
+JWT issuer and audience default to `Resumade` and `ResumadeUsers`. Use `Jwt__Issuer` and `Jwt__Audience` if you need to override them.
 
-With the HTTPS profile running:
+## Start the web app
+
+Create `web/.env.local` with these values:
+
+```dotenv
+API_URL=http://localhost:5011
+AUTH_SECRET=<replace-with-a-long-random-secret>
+AUTH_TRUST_HOST=true
+```
 
 ```powershell
-Invoke-RestMethod https://localhost:7131/api/health
+cd web
+npm ci
+npm run dev
 ```
 
-The response is `{"status":"healthy","service":"Resumade API"}`. This is a process health response, not a database readiness check. Development-only API documentation is available at `https://localhost:7131/scalar/v1` and `https://localhost:7131/openapi/v1.json`.
+Open [localhost:3000](http://localhost:3000). Create a local account to try the dashboard, or use **Start building** as a guest to try templates, PDF import, and download.
 
-The API's `Frontend` CORS policy allows `http://localhost:3000`, any header, and any method. Other client origins require a code change to that policy.
+For Google sign-in, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `web/.env.local`, set `Google__ClientId` to the same client ID for the API, and register `http://localhost:3000/api/auth/callback/google` as the local callback URL.
 
-## Checks
+To run the HTTPS profile, use `dotnet dev-certs https --trust`, start the API with `--launch-profile https`, and set `API_URL=https://localhost:7131`. If Node needs the local CA, set `NODE_EXTRA_CA_CERTS` to the public certificate PEM before starting the web process.
 
-From the root, with the API configuration above set:
+## Run checks
 
 ```powershell
-dotnet test Resumade.Api.slnx --no-build --no-restore
+# Repository root, with the API environment variables above
+dotnet test Resumade.Api.slnx
+
+# web/
+npm run lint
+npx tsc --noEmit
 ```
 
-Build first when source changes. Parser tests cover section classification, field extraction, date precision, entry boundaries, and text-item grouping. Parse endpoint tests supply their own test JWT configuration and check authentication, request validation, and the request-to-content flow without connecting to a database. The health test uses the API startup configuration above and does not access the database.
+The API integration suite checks health and anonymous PDF generation. PDF generation launches Chromium. If downloads are unavailable in your test environment, set `PUPPETEER_EXECUTABLE_PATH` before running the suite.
 
-## Known implementation gaps
-
-- Authentication actions have an `EnableRateLimiting("auth")` attribute, but `Program.cs` does not register a rate-limiting policy or middleware. Rate limiting is not configured.
-- Parsing uses deterministic rules for common English resume layouts; unfamiliar headings and ambiguous entry layouts may need user correction. There is no tailoring endpoint.
-- `FileStorage:RootPath` is present in configuration but is unused. There is no document upload or storage endpoint.
-- Account and saved-resume CRUD operations have no automated tests in the current project.
+See the [API reference](api.md) for endpoint contracts and the [page gallery](screenshots.md) for the main flows.

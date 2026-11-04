@@ -75,7 +75,7 @@ function SortableRow({
     <li
       ref={ref}
       data-dragging={isDragging || undefined}
-      className="relative min-w-0 bg-background data-dragging:z-10 data-dragging:shadow-md"
+      className="relative min-w-0 bg-white data-dragging:z-10 data-dragging:shadow-[0_14px_35px_#27356024]"
     >
       {children(
         <Button
@@ -84,7 +84,7 @@ function SortableRow({
           variant="ghost"
           size="icon-sm"
           aria-label={`Reorder ${label}`}
-          className="touch-none cursor-grab text-muted-foreground active:cursor-grabbing"
+          className="touch-none cursor-grab text-[#9aa6b9] hover:text-[#3558c8] active:cursor-grabbing"
         >
           <GripVertical aria-hidden="true" />
         </Button>,

@@ -3,11 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
 
+import { toast } from '@/components/ui/toast';
+import { takePdfImport } from '@/lib/resume/import-handoff';
 import { createEmptyResumeDraft, resumeDraftSchema, type ResumeDraft } from '@/lib/resume/resume.schema';
 
 import { defaultPreviewSettings, defaultSectionOrder, sectionTitles, type PreviewSettings, type SectionKey } from './preview/constants';
 
-const storageKey = 'resumade.editor.draft.v1';
+const defaultStorageKey = 'resumade.editor.draft.v1';
 const delayMs = 750;
 const coalesceMs = 1200;
 const maxHistory = 50;
@@ -32,7 +34,7 @@ type SaveStatus = 'saved' | 'unsaved' | 'error';
 
 const initialSnapshot: Snapshot = { draft: createEmptyResumeDraft(), sectionOrder: defaultSectionOrder, settings: defaultPreviewSettings };
 
-function readDraft(): Snapshot | null {
+function readDraft(storageKey: string): Snapshot | null {
   try {
     const parsed = snapshotSchema.safeParse(JSON.parse(localStorage.getItem(storageKey) ?? 'null'));
     if (!parsed.success) return null;
@@ -44,8 +46,21 @@ function readDraft(): Snapshot | null {
   }
 }
 
-export function useResumeDocument() {
-  const [snapshot, setSnapshot] = useState(initialSnapshot);
+export function useResumeDocument({
+  initialStyle,
+  initialImportId,
+  initialDraft,
+  draftScope,
+}: {
+  initialStyle?: PreviewSettings['style'];
+  initialImportId?: string;
+  initialDraft?: ResumeDraft;
+  draftScope?: string;
+}) {
+  const storageKey = initialDraft ? null : draftScope ? `${defaultStorageKey}.${draftScope}` : defaultStorageKey;
+  const [snapshot, setSnapshot] = useState(() =>
+    initialDraft ? { ...initialSnapshot, draft: initialDraft } : initialSnapshot,
+  );
   const [history, setHistory] = useState<History>({ undo: [], redo: [] });
   const [status, setStatus] = useState<SaveStatus>('saved');
   const [generation, setGeneration] = useState(0);
@@ -57,17 +72,42 @@ export function useResumeDocument() {
     let active = true;
     queueMicrotask(() => {
       if (!active) return;
-      const restored = readDraft();
-      if (restored && currentRef.current === initialSnapshot) {
-        currentRef.current = restored;
-        setSnapshot(restored);
+      if (currentRef.current !== initialSnapshot) return;
+
+      const restored = storageKey ? readDraft(storageKey) : null;
+      const imported = initialImportId ? takePdfImport(initialImportId) : null;
+      if (initialImportId && !imported && !restored) {
+        toast.add({
+          title: 'Resume import failed',
+          description: 'The import could not be opened. Please import the PDF again.',
+          type: 'error',
+        });
       }
+      if (!restored && !initialStyle && !imported) return;
+
+      const base = restored ?? initialSnapshot;
+      const next = initialStyle
+        ? { ...base, settings: { ...base.settings, style: initialStyle } }
+        : base;
+      const hydrated = imported ? { ...next, draft: imported } : next;
+
+      currentRef.current = hydrated;
+      setSnapshot(hydrated);
+      // Rebuild the editor's local row IDs from the restored or imported draft.
+      if (restored || imported) setGeneration((value) => value + 1);
+      if (imported) {
+        const updated: History = { undo: [base], redo: [] };
+        historyRef.current = updated;
+        setHistory(updated);
+        toast.add({ title: 'Resume imported', type: 'success' });
+      }
+      if (imported || next.settings.style !== base.settings.style) setStatus('unsaved');
     });
     return () => { active = false; };
-  }, []);
+  }, [initialStyle, initialImportId, storageKey]);
 
   useEffect(() => {
-    if (status !== 'unsaved') return;
+    if (!storageKey || status !== 'unsaved') return;
     const timer = window.setTimeout(() => {
       try {
         localStorage.setItem(storageKey, JSON.stringify(snapshot));
@@ -77,9 +117,10 @@ export function useResumeDocument() {
       }
     }, delayMs);
     return () => window.clearTimeout(timer);
-  }, [snapshot, status]);
+  }, [snapshot, status, storageKey]);
 
   useEffect(() => {
+    if (!storageKey) return;
     const flush = () => {
       if (status === 'saved') return;
       try {
@@ -96,7 +137,7 @@ export function useResumeDocument() {
       window.removeEventListener('pagehide', flush);
       flush();
     };
-  }, [status]);
+  }, [status, storageKey]);
 
   const apply = useCallback((next: Snapshot, label: string, force = false) => {
     const previous = currentRef.current;

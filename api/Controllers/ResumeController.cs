@@ -6,6 +6,7 @@ using Resumade.Api.Dtos.Parsing;
 using Resumade.Api.Infrastructure.Validation;
 using Resumade.Api.Services.Parsing;
 using Resumade.Api.Services.Parsing.Pipeline;
+using Resumade.Api.Services.Pdf;
 using Resumade.Api.Services.Resume;
 
 namespace Resumade.Api.Controllers
@@ -17,11 +18,14 @@ namespace Resumade.Api.Controllers
     {
         private readonly ResumeService _resumeService;
         private readonly ResumeParserService _resumeParserService;
+        private readonly ResumeGenerationService _resumeGenerationService;
 
-        public ResumesController(ResumeService resumeService, ResumeParserService resumeParserService)
+        public ResumesController(ResumeService resumeService, ResumeParserService resumeParserService,
+            ResumeGenerationService resumeGenerationService)
         {
             _resumeService = resumeService;
             _resumeParserService = resumeParserService;
+            _resumeGenerationService = resumeGenerationService;
         }
 
         private Guid GetUserId()
@@ -43,6 +47,19 @@ namespace Resumade.Api.Controllers
             var resume = await _resumeService.GetResumeByIdAsync(id, GetUserId());
             if (resume == null) return NotFound();
             return Ok(resume);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("pdf")]
+        [RequestSizeLimit(2_000_000)]
+        [Produces("application/pdf")]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+        public async Task<IActionResult> DownloadDraftPdf(DownloadResumePdfDto preview, CancellationToken ct)
+        {
+            var bytes = await _resumeGenerationService.GenerateAsync(preview.Html, ct);
+            var title = string.Concat(preview.Title.Trim().Select(character =>
+                char.IsControl(character) || "<>:\"/\\|?*".Contains(character) ? '-' : character));
+            return File(bytes, "application/pdf", $"{title}.pdf");
         }
 
         [HttpPost]
@@ -68,6 +85,7 @@ namespace Resumade.Api.Controllers
             return NoContent();
         }
 
+        [AllowAnonymous]
         [HttpPost("parse")]
         public ActionResult<ResumeContentDto> Parse([FromBody] List<TextItemDto> request)
         {
