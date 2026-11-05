@@ -3,9 +3,8 @@ import 'server-only';
 import { headers } from 'next/headers';
 import { getToken } from 'next-auth/jwt';
 import { isCurrentApiToken } from '@/lib/auth/api-token';
-import { z } from 'zod';
 
-import { savedResumeSchema, type ResumeDraft } from './resume.schema';
+import { savedResumePageSchema, savedResumeSchema, type ResumeDraft } from './resume.schema';
 
 export class ResumeApiError extends Error {
   constructor(public status: number) {
@@ -41,8 +40,9 @@ async function requestResumes(path = '', options?: RequestInit) {
   return response.json() as Promise<unknown>;
 }
 
-export async function listSavedResumes() {
-  return z.array(savedResumeSchema).parse(await requestResumes());
+export async function listSavedResumes(cursor?: string) {
+  const query = cursor ? `?${new URLSearchParams({ cursor })}` : '';
+  return savedResumePageSchema.parse(await requestResumes(query));
 }
 
 export async function getSavedResume(id: string) {

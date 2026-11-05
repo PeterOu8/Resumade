@@ -66,7 +66,7 @@ const fontOptions = [
 ] as const;
 const alignmentOptions = [
   ['left', 'Left'],
-  ['center', 'Centered'],
+  ['center', 'Centred'],
 ] as const;
 const headingOptions = [
   ['plain', 'Plain'],
@@ -164,23 +164,23 @@ export function PreviewToolbar({
           Colours and margins
         </summary>
         <div className="mt-3 grid grid-cols-2 gap-3">
-          {(['accent', 'text'] as const).map((color) => (
+          {(['accent', 'text'] as const).map((colour) => (
             <label
-              key={color}
+              key={colour}
               className="flex items-center gap-2 text-sm text-foreground-label"
             >
               <Input
                 type="color"
                 className="h-9 w-10 shrink-0 border-border-strong bg-surface p-0.5"
-                value={settings.theme[color]}
+                value={settings.theme[colour]}
                 onChange={(event) =>
                   onChange({
                     ...settings,
-                    theme: { ...settings.theme, [color]: event.target.value },
+                    theme: { ...settings.theme, [colour]: event.target.value },
                   })
                 }
               />
-              {color === 'accent' ? 'Accent' : 'Text'}
+              {colour === 'accent' ? 'Accent' : 'Text'}
             </label>
           ))}
         </div>

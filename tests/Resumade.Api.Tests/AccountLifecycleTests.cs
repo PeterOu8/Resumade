@@ -15,6 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Resumade.Api.Data;
 using Resumade.Api.Dtos.Auth;
+using Resumade.Api.Dtos.Resumes;
 using Resumade.Api.Models;
 using Resumade.Api.Services.Auth;
 using Xunit;
@@ -142,6 +143,20 @@ public sealed class AccountLifecycleTests
             Assert.Equal(HttpStatusCode.Unauthorized, await Me(client, auth.AccessToken));
             Assert.Equal(HttpStatusCode.Unauthorized, await SignIn(client, Password));
             Assert.Equal(HttpStatusCode.OK, await SignIn(client, NewPassword));
+
+            db.Resumes.AddRange(Enumerable.Range(1, 15).Select(i => new Resume { UserId = user.Id, Title = $"Resume {i}" }));
+            await db.SaveChangesAsync();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Jwt(user.Id, "1"));
+            var draft = new SaveResumeDto { Title = "Concurrent save", Content = new ResumeContentDto() };
+            using var firstSave = new HttpRequestMessage(HttpMethod.Post, "/api/resumes") { Content = JsonContent.Create(draft) };
+            using var secondSave = new HttpRequestMessage(HttpMethod.Post, "/api/resumes") { Content = JsonContent.Create(draft) };
+            var saves = await Task.WhenAll(client.SendAsync(firstSave), client.SendAsync(secondSave));
+            using var firstResult = saves[0];
+            using var secondResult = saves[1];
+            Assert.Single(saves, response => response.StatusCode == HttpStatusCode.Created);
+            Assert.Single(saves, response => response.StatusCode == HttpStatusCode.Conflict);
+            Assert.Equal(16, await db.Resumes.CountAsync(r => r.UserId == user.Id));
+            client.DefaultRequestHeaders.Authorization = null;
 
             var googlePayload = new GoogleJsonWebSignature.Payload
             {

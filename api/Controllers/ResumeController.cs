@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using System.ComponentModel.DataAnnotations;
 using Resumade.Api.Dtos.Resumes;
 using System.Security.Claims;
 using Resumade.Api.Dtos.Parsing;
@@ -32,10 +33,16 @@ namespace Resumade.Api.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<ResumeDto>>> GetAll()
+        public async Task<ActionResult<ResumePageDto>> GetAll(
+            [FromQuery, Range(1, 8)] int limit = 8,
+            [FromQuery, MaxLength(56)] string? cursor = null,
+            CancellationToken cancellationToken = default)
         {
-            var resumes = await _resumeService.GetUserResumesAsync(GetUserId());
-            return Ok(resumes);
+            if (!ResumeCursor.TryParse(cursor, out var after))
+                return Problem(statusCode: StatusCodes.Status400BadRequest, title: "Invalid resume cursor");
+
+            return Ok(await _resumeService.GetUserResumesAsync(
+                GetUserId(), limit, cursor is null ? null : after, cancellationToken));
         }
 
         [HttpGet("{id:guid}")]
@@ -47,14 +54,22 @@ namespace Resumade.Api.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ResumeDto>> Create(CreateResumeDto dto)
+        public async Task<ActionResult<ResumeDto>> Create(SaveResumeDto dto, CancellationToken cancellationToken)
         {
-            var resume = await _resumeService.CreateResumeAsync(dto, GetUserId());
+            var resume = await _resumeService.CreateResumeAsync(dto, GetUserId(), cancellationToken);
+            if (resume is null)
+            {
+                return Problem(
+                    statusCode: StatusCodes.Status409Conflict,
+                    title: "Saved resume limit reached",
+                    detail: $"You can save up to {ResumeService.MaxSavedResumes} resumes.");
+            }
+
             return CreatedAtAction(nameof(GetById), new { id = resume.Id }, resume);
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<ActionResult<ResumeDto>> Update(Guid id, UpdateResumeDto dto)
+        public async Task<ActionResult<ResumeDto>> Update(Guid id, SaveResumeDto dto)
         {
             var resume = await _resumeService.UpdateResumeAsync(id, dto, GetUserId());
             if (resume == null) return NotFound();

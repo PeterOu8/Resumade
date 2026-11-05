@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth';
+import { apiJsonRequestOptions } from './lib/api/trusted-client-ip';
 import { isCurrentApiToken } from './lib/auth/api-token';
 import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
@@ -19,9 +20,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const apiUrl = process.env.API_URL;
         if (!apiUrl) throw new Error('API_URL is missing');
 
-        const response = await fetch(new URL('/api/auth/signin', apiUrl), {
+        const destination = new URL('/api/auth/signin', apiUrl);
+        const response = await fetch(destination, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          ...await apiJsonRequestOptions(destination),
           body: JSON.stringify(input.data),
           cache: 'no-store',
           signal: AbortSignal.timeout(10_000),
@@ -82,9 +84,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!apiUrl) throw new Error('API_URL is missing');
         if (!account.id_token) throw new Error('Google ID token is missing');
 
-        const response = await fetch(new URL('/api/auth/google', apiUrl), {
+        const destination = new URL('/api/auth/google', apiUrl);
+        const response = await fetch(destination, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          ...await apiJsonRequestOptions(destination),
           body: JSON.stringify({ idToken: account.id_token }),
           cache: 'no-store',
           signal: AbortSignal.timeout(10_000),

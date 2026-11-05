@@ -68,7 +68,7 @@ internal static class TextItemMapper
                 case '\uFB03': sb.Append("ffi"); break;
                 case '\uFB04': sb.Append("ffl"); break;
 
-                // Normalize quotation marks
+                // Normalise quotation marks
                 case '\u2018':
                 case '\u2019':
                     sb.Append('\'');

@@ -1,9 +1,6 @@
-**
-!**/*.cs
-!**/*.csproj
-!appsettings.json
-!packages.lock.json
 **/bin
 **/obj
-**/.vs
-**/.build
+.git
+.vs
+Dockerfile*
+Resumade.Api.csproj.user

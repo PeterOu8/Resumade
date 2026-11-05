@@ -53,7 +53,27 @@ public sealed class AiProviderService(HttpClient httpClient)
             _ => throw new AiProviderException("Choose a supported AI provider.", StatusCodes.Status400BadRequest)
         };
 
-        using var response = await SendAsync(request, cancellationToken);
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        deadline.CancelAfter(httpClient.Timeout);
+        try
+        {
+            return await ReadProviderResponseAsync(request, provider, schema, deadline.Token);
+        }
+        catch (OperationCanceledException error) when (!cancellationToken.IsCancellationRequested &&
+            (deadline.IsCancellationRequested || error.InnerException is TimeoutException))
+        {
+            throw new AiProviderException("The AI provider timed out.", StatusCodes.Status504GatewayTimeout);
+        }
+        catch (HttpRequestException)
+        {
+            throw new AiProviderException("The AI provider could not be reached.");
+        }
+    }
+
+    private async Task<ResumeContentDto> ReadProviderResponseAsync(
+        HttpRequestMessage request, string provider, JsonObject schema, CancellationToken cancellationToken)
+    {
+        using var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             var status = (int)response.StatusCode;
@@ -108,22 +128,6 @@ public sealed class AiProviderService(HttpClient httpClient)
         catch (JsonException)
         {
             throw new AiProviderException("The AI provider returned invalid JSON.");
-        }
-    }
-
-    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-        {
-            throw new AiProviderException("The AI provider timed out.", StatusCodes.Status504GatewayTimeout);
-        }
-        catch (HttpRequestException)
-        {
-            throw new AiProviderException("The AI provider could not be reached.");
         }
     }
 

@@ -1,13 +1,12 @@
 import { z } from 'zod';
+import { aiConnectionSchema } from '@/lib/ai/ai-connection.schema';
+import { apiErrorMessage } from '@/lib/api/problem-response';
+import { apiJsonRequestOptions } from '@/lib/api/trusted-client-ip';
 
 import { resumeContentSchema } from '@/lib/resume/resume.schema';
 
 const requestSchema = z.object({
-  ai: z.object({
-    provider: z.enum(['openai', 'claude', 'grok', 'gemini', 'deepseek']),
-    apiKey: z.string().min(8).max(512),
-    model: z.string().max(120),
-  }),
+  ai: aiConnectionSchema,
   resume: resumeContentSchema,
   jobDescription: z.string().trim().min(20).max(20_000),
   instructions: z.string().trim().max(2_000).optional(),
@@ -32,20 +31,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const response = await fetch(new URL('/api/ai/resumes/tailor', apiUrl), {
+    const destination = new URL('/api/ai/resumes/tailor', apiUrl);
+    const response = await fetch(destination, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      ...await apiJsonRequestOptions(destination, request.headers),
       body: JSON.stringify(parsed.data),
       cache: 'no-store',
       signal: AbortSignal.timeout(95_000),
     });
     const result: unknown = await response.json().catch(() => null);
     if (!response.ok) {
-      const message = result && typeof result === 'object' && 'detail' in result && typeof result.detail === 'string'
-        ? result.detail
-        : 'AI tailoring is unavailable.';
       return Response.json(
-        { error: message },
+        { error: apiErrorMessage(result, 'AI tailoring is unavailable.') },
         { status: response.status >= 400 && response.status < 500 ? response.status : 502 },
       );
     }

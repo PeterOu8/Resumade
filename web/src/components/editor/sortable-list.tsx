@@ -24,8 +24,8 @@ export function SortableList<T>({
 }: SortableListProps<T>) {
   return (
     <DragDropProvider
-      onDragEnd={({ canceled, operation: { source } }) => {
-        if (canceled || !isSortable(source)) return;
+      onDragEnd={({ canceled: cancelled, operation: { source } }) => {
+        if (cancelled || !isSortable(source)) return;
 
         const { initialIndex, index } = source;
         if (

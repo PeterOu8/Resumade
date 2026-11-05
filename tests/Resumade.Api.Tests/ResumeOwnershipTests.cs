@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -67,10 +68,10 @@ public sealed class ResumeOwnershipTests
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var resume = Assert.IsType<ResumeDto>(await created.Content.ReadFromJsonAsync<ResumeDto>());
         var resumePath = $"{path}/{resume.Id}";
-        var change = new UpdateResumeDto { Title = "Updated resume", Content = new ResumeContentDto() };
+        var change = new SaveResumeDto { Title = "Updated resume", Content = new ResumeContentDto() };
 
         client.DefaultRequestHeaders.Authorization = Bearer(other);
-        Assert.Empty((await client.GetFromJsonAsync<ResumeDto[]>(path))!);
+        Assert.Empty((await client.GetFromJsonAsync<ResumePageDto>(path))!.Items);
         using var otherRead = await client.GetAsync(resumePath);
         using var otherWrite = await client.PutAsJsonAsync(resumePath, change);
         using var otherDelete = await client.DeleteAsync(resumePath);
@@ -79,7 +80,24 @@ public sealed class ResumeOwnershipTests
         Assert.Equal(HttpStatusCode.NotFound, otherDelete.StatusCode);
 
         client.DefaultRequestHeaders.Authorization = Bearer(owner);
-        Assert.Equal(resume.Id, Assert.Single((await client.GetFromJsonAsync<ResumeDto[]>(path))!).Id);
+        Assert.Equal(resume.Id, Assert.Single((await client.GetFromJsonAsync<ResumePageDto>(path))!.Items).Id);
+        foreach (var content in new[]
+        {
+            """{"experience":[null]}""",
+            """{"experience":[{"bullets":[null]}]}""",
+            """{"keySkills":null}""",
+            """{"profile":null}""",
+            """{"profile":{"fullName":null}}"""
+        })
+        {
+            using var json = JsonDocument.Parse(content);
+            var invalid = new { Title = "Invalid resume", Content = json.RootElement };
+            using var invalidCreate = await client.PostAsJsonAsync(path, invalid);
+            using var invalidUpdate = await client.PutAsJsonAsync(resumePath, invalid);
+            Assert.Equal(HttpStatusCode.BadRequest, invalidCreate.StatusCode);
+            Assert.Equal(HttpStatusCode.BadRequest, invalidUpdate.StatusCode);
+        }
+        Assert.Single((await client.GetFromJsonAsync<ResumePageDto>(path))!.Items);
         var original = await client.GetFromJsonAsync<ResumeDto>(resumePath);
         Assert.Equal("Original resume", original?.Title);
         using var updated = await client.PutAsJsonAsync(resumePath, change);
@@ -87,7 +105,55 @@ public sealed class ResumeOwnershipTests
         Assert.Equal(change.Title, (await updated.Content.ReadFromJsonAsync<ResumeDto>())?.Title);
         using var deleted = await client.DeleteAsync(resumePath);
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
-        Assert.Empty((await client.GetFromJsonAsync<ResumeDto[]>(path))!);
+        Assert.Empty((await client.GetFromJsonAsync<ResumePageDto>(path))!.Items);
+
+        var timestamp = DateTime.UtcNow;
+        var older = new Resume { UserId = owner.Id, UpdatedAt = timestamp.AddMinutes(-1) };
+        var tied = new Resume { UserId = owner.Id, UpdatedAt = timestamp };
+        var newest = new Resume { UserId = owner.Id, UpdatedAt = timestamp, ContentJson = "null" };
+        if (newest.Id.CompareTo(tied.Id) < 0)
+            (newest.Id, tied.Id) = (tied.Id, newest.Id);
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ResumadeDbContext>();
+            db.Resumes.AddRange(older, tied, newest, new Resume { UserId = other.Id, UpdatedAt = timestamp.AddMinutes(1) });
+            await db.SaveChangesAsync();
+        }
+
+        using var firstJson = await client.GetFromJsonAsync<JsonDocument>($"{path}?limit=1");
+        var first = firstJson!.RootElement.Deserialize<ResumePageDto>(new JsonSerializerOptions(JsonSerializerDefaults.Web))!;
+        Assert.Equal(newest.Id, Assert.Single(first.Items).Id);
+        Assert.False(firstJson.RootElement.GetProperty("items")[0].TryGetProperty("content", out _));
+        var nextCursor = Assert.IsType<string>(first.NextCursor);
+        var second = await client.GetFromJsonAsync<ResumePageDto>($"{path}?limit=2&cursor={Uri.EscapeDataString(nextCursor)}");
+        Assert.Equal(new[] { tied.Id, older.Id }, second!.Items.Select(item => item.Id));
+        Assert.Null(second.NextCursor);
+
+        using var badCursor = await client.GetAsync($"{path}?cursor=invalid");
+        using var negativeCursor = await client.GetAsync(
+            $"{path}?cursor={Uri.EscapeDataString($"-1:{Guid.Empty:D}")}");
+        using var badLimit = await client.GetAsync($"{path}?limit=9");
+        Assert.Equal(HttpStatusCode.BadRequest, badCursor.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, negativeCursor.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, badLimit.StatusCode);
+
+        var draft = new SaveResumeDto { Title = "New resume", Content = new ResumeContentDto() };
+        for (var count = 3; count < 16; count++)
+        {
+            using var save = await client.PostAsJsonAsync(path, draft);
+            Assert.Equal(HttpStatusCode.Created, save.StatusCode);
+        }
+        using var overQuota = await client.PostAsJsonAsync(path, draft);
+        Assert.Equal(HttpStatusCode.Conflict, overQuota.StatusCode);
+        using var problem = await overQuota.Content.ReadFromJsonAsync<JsonDocument>();
+        Assert.Equal("You can save up to 16 resumes.", problem!.RootElement.GetProperty("detail").GetString());
+
+        using var editAtQuota = await client.PutAsJsonAsync($"{path}/{tied.Id}", change);
+        Assert.Equal(HttpStatusCode.OK, editAtQuota.StatusCode);
+        using var freeSlot = await client.DeleteAsync($"{path}/{older.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, freeSlot.StatusCode);
+        using var saveAgain = await client.PostAsJsonAsync(path, draft);
+        Assert.Equal(HttpStatusCode.Created, saveAgain.StatusCode);
     }
 
     private static AuthenticationHeaderValue Bearer(User user)

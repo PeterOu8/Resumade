@@ -1,6 +1,7 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { apiJsonRequestOptions } from '../api/trusted-client-ip';
 
 import { accountEmailSchema, resetPasswordSchema, signupSchema, tokenSchema } from './auth.schema';
 
@@ -30,9 +31,10 @@ export async function submitAccountAction(
 
   let response: Response;
   try {
-    response = await fetch(new URL(`/api/auth/${action}`, apiUrl), {
+    const destination = new URL(`/api/auth/${action}`, apiUrl);
+    response = await fetch(destination, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      ...await apiJsonRequestOptions(destination),
       body: JSON.stringify(result.data),
       cache: 'no-store',
       signal: AbortSignal.timeout(10_000),

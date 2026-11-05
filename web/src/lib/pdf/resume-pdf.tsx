@@ -30,11 +30,11 @@ const baseStyles = StyleSheet.create({
   page: { backgroundColor: '#ffffff' },
   profile: { paddingBottom: 8, borderBottomWidth: 2 },
   modernProfile: { paddingTop: 2, paddingBottom: 2, paddingLeft: 10, borderBottomWidth: 0, borderLeftWidth: 3 },
-  centered: { textAlign: 'center' },
+  centred: { textAlign: 'center' },
   name: { fontSize: 26, lineHeight: 1.12, fontWeight: 700 },
   role: { marginTop: 3, fontSize: 12 },
   contacts: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4, columnGap: 10, rowGap: 2, fontSize: 9 },
-  centeredContacts: { justifyContent: 'center' },
+  centredContacts: { justifyContent: 'center' },
   sectionTitle: { marginBottom: 5, fontSize: 12, fontWeight: 700 },
   headingBand: { paddingVertical: 2, paddingHorizontal: 5 },
   entryHeading: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', columnGap: 8 },
@@ -212,14 +212,14 @@ function Profile({ profile, settings, options }: { profile: ResumeContent['profi
         { borderBottomColor: settings.theme.accent },
         settings.style === 'modern' ? [baseStyles.modernProfile, { borderLeftColor: settings.theme.accent }] : undefined,
         classic ? baseStyles.classicProfile : undefined,
-        options.alignment === 'center' ? baseStyles.centered : undefined,
+        options.alignment === 'center' ? baseStyles.centred : undefined,
       ]}
       wrap={false}
     >
       <Text style={[baseStyles.name, classic ? baseStyles.classicName : undefined]}>{profile.fullName.trim() || 'Your name'}</Text>
       {profile.title.trim() && <Text style={[baseStyles.role, { color: settings.theme.accent }, classic ? [baseStyles.classicRole, { color: settings.theme.text }] : undefined]}>{profile.title}</Text>}
       {contacts.length > 0 && (
-        <View style={[baseStyles.contacts, classic ? baseStyles.classicContacts : undefined, options.alignment === 'center' ? baseStyles.centeredContacts : undefined]}>
+        <View style={[baseStyles.contacts, classic ? baseStyles.classicContacts : undefined, options.alignment === 'center' ? baseStyles.centredContacts : undefined]}>
           {contacts.map(({ value, plain, protocol }, index) => value && (
             <View key={index} style={{ flexDirection: 'row' }}>
               {classic && index > 0 && <Text style={{ marginHorizontal: 6 }}>|</Text>}

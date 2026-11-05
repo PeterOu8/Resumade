@@ -84,6 +84,20 @@ export const savedResumeSchema = resumeDraftSchema.extend({
   updatedAt: z.iso.datetime({ offset: true }),
 });
 
+const savedResumeCardSchema = savedResumeSchema.pick({ id: true, title: true, updatedAt: true });
+
+export const savedResumeListSchema = z.array(z.unknown()).transform((records) =>
+  records.flatMap((record) => {
+    const card = savedResumeCardSchema.safeParse(record);
+    return card.success ? [card.data] : [];
+  }),
+);
+
+export const savedResumePageSchema = z.object({
+  items: savedResumeListSchema,
+  nextCursor: z.string().nullable(),
+});
+
 export type ResumeContent = z.infer<typeof resumeContentSchema>;
 export type ResumeDraft = z.infer<typeof resumeDraftSchema>;
 

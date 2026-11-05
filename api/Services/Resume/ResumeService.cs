@@ -2,12 +2,14 @@
 using Resumade.Api.Data;
 using Resumade.Api.Dtos.Resumes;
 using Resumade.Api.Models;
+using System.Data;
 using System.Text.Json;
 
 namespace Resumade.Api.Services.Resume
 {
     public class ResumeService
     {
+        public const int MaxSavedResumes = 16;
         private readonly ResumadeDbContext _context;
 
         public ResumeService(ResumadeDbContext context)
@@ -34,15 +36,31 @@ namespace Resumade.Api.Services.Resume
             };
         }
 
-        public async Task<List<ResumeDto>> GetUserResumesAsync(Guid userId)
+        internal async Task<ResumePageDto> GetUserResumesAsync(
+            Guid userId, int limit, ResumeCursor? after, CancellationToken cancellationToken)
         {
-            var resumes = await _context.Resumes
+            var query = _context.Resumes
                 .AsNoTracking()
-                .Where(r => r.UserId == userId)
-                .OrderByDescending(r => r.UpdatedAt)
-                .ToListAsync();
+                .Where(r => r.UserId == userId);
+            if (after is { } cursor)
+            {
+                query = query.Where(r => r.UpdatedAt < cursor.UpdatedAt ||
+                    (r.UpdatedAt == cursor.UpdatedAt && r.Id.CompareTo(cursor.Id) < 0));
+            }
 
-            return resumes.Select(ToDto).ToList();
+            var resumes = await query
+                .OrderByDescending(r => r.UpdatedAt)
+                .ThenByDescending(r => r.Id)
+                .Select(r => new ResumeSummaryDto(r.Id, r.Title, r.CreatedAt, r.UpdatedAt))
+                .Take(limit + 1)
+                .ToListAsync(cancellationToken);
+
+            if (resumes.Count <= limit)
+                return new ResumePageDto(resumes, null);
+
+            resumes.RemoveAt(limit);
+            var last = resumes[^1];
+            return new ResumePageDto(resumes, ResumeCursor.From(last).ToString());
         }
 
         public async Task<ResumeDto?> GetResumeByIdAsync(Guid id, Guid userId)
@@ -55,8 +73,28 @@ namespace Resumade.Api.Services.Resume
             return ToDto(resume);
         }
 
-        public async Task<ResumeDto> CreateResumeAsync(CreateResumeDto dto, Guid userId)
+        public async Task<ResumeDto?> CreateResumeAsync(
+            SaveResumeDto dto, Guid userId, CancellationToken cancellationToken)
         {
+            var isPostgres = _context.Database.IsNpgsql();
+            await using var transaction = isPostgres
+                ? await _context.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken)
+                : await _context.Database.BeginTransactionAsync(cancellationToken);
+            if (isPostgres)
+            {
+                // Serialise creates for this owner so they cannot claim the same slot.
+                await _context.Database.SqlQuery<Guid>(
+                    $"SELECT \"Id\" AS \"Value\" FROM \"Users\" WHERE \"Id\" = {userId} FOR UPDATE")
+                    .ToListAsync(cancellationToken);
+            }
+
+            var savedCount = await _context.Resumes
+                .Where(r => r.UserId == userId)
+                .Take(MaxSavedResumes)
+                .CountAsync(cancellationToken);
+            if (savedCount >= MaxSavedResumes)
+                return null;
+
             var resume = new Models.Resume
             {
                 UserId = userId,
@@ -65,12 +103,13 @@ namespace Resumade.Api.Services.Resume
             };
 
             _context.Resumes.Add(resume);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             return ToDto(resume);
         }
 
-        public async Task<ResumeDto?> UpdateResumeAsync(Guid id, UpdateResumeDto dto, Guid userId)
+        public async Task<ResumeDto?> UpdateResumeAsync(Guid id, SaveResumeDto dto, Guid userId)
         {
             var resume = await _context.Resumes
                 .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId);

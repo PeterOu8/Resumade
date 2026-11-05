@@ -38,6 +38,9 @@ namespace Resumade.Api.Data
             });
 
             modelBuilder.Entity<Resume>()
+                .HasIndex(r => new { r.UserId, r.UpdatedAt, r.Id });
+
+            modelBuilder.Entity<Resume>()
                 .HasOne(r => r.User)
                 .WithMany(u => u.Resumes)
                 .HasForeignKey(r => r.UserId)

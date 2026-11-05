@@ -5,18 +5,22 @@ import { pathToFileURL } from 'node:url';
 
 const require = createRequire(import.meta.url);
 const authDirectory = new URL('../src/lib/auth/', import.meta.url).href;
+const apiDirectory = new URL('../src/lib/api/', import.meta.url).href;
 
 // Resolve the imports that Next's bundler normally supplies.
 const hooks = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (!context.parentURL?.startsWith(authDirectory)) {
+    if (!context.parentURL?.startsWith(authDirectory) && !context.parentURL?.startsWith(apiDirectory)) {
       return nextResolve(specifier, context);
     }
     if (specifier === 'server-only') {
       return { url: 'data:text/javascript,export%20%7B%7D', shortCircuit: true };
     }
-    if (specifier === 'next/navigation') {
-      return nextResolve(pathToFileURL(require.resolve('next/navigation.js')).href, context);
+    if (specifier === 'next/navigation' || specifier === 'next/headers') {
+      return nextResolve(pathToFileURL(require.resolve(`${specifier}.js`)).href, context);
+    }
+    if (specifier === '../api/trusted-client-ip') {
+      return nextResolve('../api/trusted-client-ip.ts', context);
     }
     if (specifier === './auth.schema') {
       return nextResolve('./auth.schema.ts', context);
@@ -61,7 +65,7 @@ test('signup returns inline success without expecting an access token', async (t
   assert.deepEqual(JSON.parse(options.body), { displayName: 'Test User', email, password });
 });
 
-test('forgot-password posts a normalized email and returns generic success', async (t) => {
+test('forgot-password posts a normalised email and returns generic success', async (t) => {
   const fetch = mockApi(t, 202);
   assert.deepEqual(await submitAccountAction('forgot-password', {}, form({ email: ` ${email} ` })), { success: true });
   const [url, options] = fetch.mock.calls[0].arguments;

@@ -45,11 +45,11 @@ internal static class ExtractionText
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
     internal static string RemoveLinks(string text) => Url.Replace(text, "").Trim(' ', '|', ',', '(', ')');
-    internal static string NormalizeUrl(string url) =>
+    internal static string NormaliseUrl(string url) =>
         url.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? url : "https://" + url;
 
     internal static bool HasHost(string url, string host) =>
-        Uri.TryCreate(NormalizeUrl(url), UriKind.Absolute, out var uri) &&
+        Uri.TryCreate(NormaliseUrl(url), UriKind.Absolute, out var uri) &&
         (uri.Host.Equals(host, StringComparison.OrdinalIgnoreCase) ||
          uri.Host.EndsWith("." + host, StringComparison.OrdinalIgnoreCase));
 

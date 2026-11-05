@@ -113,7 +113,7 @@ public sealed class AiResumeSchemaTests
     }
 
     [Fact]
-    public void Canonicalize_FoldsProjectBulletsIntoDescriptionBeforeValidation()
+    public void Canonicalise_FoldsProjectBulletsIntoDescriptionBeforeValidation()
     {
         var content = JsonNode.Parse("""
             {

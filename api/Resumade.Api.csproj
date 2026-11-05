@@ -23,18 +23,6 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 
-  <!-- Preserve the local exclusions for unfinished modules after consolidation. -->
-  <ItemGroup>
-    <Compile Remove="Services/Applications/**;Services/Jobs/**;Services/Matching/**;Infrastructure/AI/**;Infrastructure/BackgroundJobs/**" />
-    <EmbeddedResource Remove="Services/Applications/**;Services/Jobs/**;Services/Matching/**;Infrastructure/AI/**;Infrastructure/BackgroundJobs/**" />
-    <None Remove="Services/Applications/**;Services/Jobs/**;Services/Matching/**;Infrastructure/AI/**;Infrastructure/BackgroundJobs/**" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Infrastructure\AI\AIMessage.cs" />
-    <Compile Include="Infrastructure\AI\AIProxyRequest.cs" />
-    <Compile Include="Infrastructure\AI\AIProxyResponse.cs" />
-    <Compile Include="Infrastructure\AI\AIProxyResult.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Folder Include="Migrations\" />
     <InternalsVisibleTo Include="Resumade.Api.Tests" />

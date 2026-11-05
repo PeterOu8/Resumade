@@ -20,7 +20,7 @@ internal static class ProfileExtractor
 
         foreach (var link in ExtractionText.Links(text))
         {
-            var url = ExtractionText.NormalizeUrl(link);
+            var url = ExtractionText.NormaliseUrl(link);
             if (ExtractionText.HasHost(url, "linkedin.com")) profile.LinkedIn ??= url;
             else if (ExtractionText.HasHost(url, "github.com")) profile.GitHub ??= url;
             else profile.Website ??= url;

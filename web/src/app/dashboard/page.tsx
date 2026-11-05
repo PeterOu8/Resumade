@@ -5,6 +5,7 @@ import { FileText } from 'lucide-react';
 import { auth } from '@/auth';
 import { DashboardToolbar } from '@/components/dashboard/dashboard-toolbar';
 import { ResumeCard } from '@/components/dashboard/resume-card';
+import { Pagination, PaginationArrow, PaginationContent, PaginationItem } from '@/components/ui/pagination';
 import { listSavedResumes, ResumeApiError } from '@/lib/resume/resume-api';
 
 const dateFormat = new Intl.DateTimeFormat('en-AU', {
@@ -12,12 +13,23 @@ const dateFormat = new Intl.DateTimeFormat('en-AU', {
   timeZone: 'UTC',
 });
 
-async function SavedResumes() {
-  let resumes;
+type DashboardSearchParams = Promise<{ cursor?: string | string[] }>;
+
+function pageHref(cursors: string[]) {
+  return { pathname: '/dashboard', query: cursors.length ? { cursor: cursors } : {} };
+}
+
+async function SavedResumes({ searchParams }: { searchParams: DashboardSearchParams }) {
+  const { cursor: rawCursor } = await searchParams;
+  // Keep earlier page bookmarks in the URL so Previous also works after a refresh.
+  const cursors = Array.isArray(rawCursor) ? rawCursor : rawCursor ? [rawCursor] : [];
+  const cursor = cursors.at(-1);
+  let page;
   try {
-    resumes = await listSavedResumes();
+    page = await listSavedResumes(cursor);
   } catch (error) {
     if (error instanceof ResumeApiError && error.status === 401) redirect('/signin');
+    if (cursor && error instanceof ResumeApiError && error.status === 400) redirect('/dashboard');
     return (
       <div
         role="alert"
@@ -28,7 +40,7 @@ async function SavedResumes() {
     );
   }
 
-  if (resumes.length === 0) {
+  if (page.items.length === 0 && !cursor && !page.nextCursor) {
     return (
       <div className="rounded-2xl border border-dashed border-[#c9d4eb] bg-white px-6 py-14 text-center">
         <FileText
@@ -44,22 +56,37 @@ async function SavedResumes() {
   }
 
   return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {resumes.map((resume) => (
-        <li key={resume.id} className="min-w-0">
-          <ResumeCard
-            id={resume.id}
-            title={resume.title}
-            updatedAt={resume.updatedAt}
-            updatedLabel={dateFormat.format(new Date(resume.updatedAt))}
-          />
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {page.items.map((resume) => (
+          <li key={resume.id} className="min-w-0">
+            <ResumeCard
+              id={resume.id}
+              title={resume.title}
+              updatedAt={resume.updatedAt}
+              updatedLabel={dateFormat.format(new Date(resume.updatedAt))}
+            />
+          </li>
+        ))}
+      </ul>
+      {page.items.length === 0 && <p className="text-sm">No resumes on this page.</p>}
+      {(cursor || page.nextCursor) && (
+        <Pagination aria-label="Resume pages" className="mt-6">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationArrow direction="previous" href={cursor ? pageHref(cursors.slice(0, -1)) : undefined} />
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationArrow direction="next" href={page.nextCursor ? pageHref([...cursors, page.nextCursor]) : undefined} />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
+    </>
   );
 }
 
-async function DashboardContent() {
+async function DashboardContent({ searchParams }: { searchParams: DashboardSearchParams }) {
   const session = await auth();
   if (!session?.user) redirect('/signin');
 
@@ -87,14 +114,14 @@ async function DashboardContent() {
             </p>
           }
         >
-          <SavedResumes />
+          <SavedResumes searchParams={searchParams} />
         </Suspense>
       </section>
     </>
   );
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({ searchParams }: { searchParams: DashboardSearchParams }) {
   return (
     <main className="min-h-[calc(100dvh-72px)] bg-[#faf9f6] px-5 py-10 text-[#1e2636] sm:px-7 sm:py-14">
       <div className="mx-auto max-w-[1280px]">
@@ -105,7 +132,7 @@ export default function DashboardPage() {
             </p>
           }
         >
-          <DashboardContent />
+          <DashboardContent searchParams={searchParams} />
         </Suspense>
       </div>
     </main>

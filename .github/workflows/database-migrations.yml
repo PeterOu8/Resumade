@@ -1,0 +1,88 @@
+name: Production database migrations
+
+on:
+  workflow_call:
+    secrets:
+      NEON_MIGRATION_CONNECTION:
+        required: true
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resumade-production-neon-migrations
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply pending EF Core migrations
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Require the main branch
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Production migrations may run only from the main branch."
+            exit 1
+          fi
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: api/packages.lock.json
+
+      - name: Restore pinned tools and dependencies
+        working-directory: api
+        run: |
+          dotnet tool restore
+          dotnet restore Resumade.Api.csproj --locked-mode
+
+      - name: Build migration bundle
+        working-directory: api
+        run: |
+          dotnet tool run dotnet-ef migrations bundle \
+            --configuration Release \
+            --self-contained \
+            --target-runtime linux-x64 \
+            --output "$RUNNER_TEMP/resumade-migrate"
+          chmod 500 "$RUNNER_TEMP/resumade-migrate"
+
+      - name: Validate direct Neon connection
+        env:
+          NEON_MIGRATION_CONNECTION: ${{ secrets.NEON_MIGRATION_CONNECTION }}
+        shell: bash
+        run: |
+          if [[ -z "${NEON_MIGRATION_CONNECTION:-}" ]]; then
+            echo "::error::NEON_MIGRATION_CONNECTION is not configured."
+            exit 1
+          fi
+
+          connection_lowercase="${NEON_MIGRATION_CONNECTION,,}"
+          if [[ "$connection_lowercase" == *"-pooler."* ]]; then
+            echo "::error::NEON_MIGRATION_CONNECTION must use a direct Neon endpoint, not a pooled endpoint."
+            exit 1
+          fi
+
+          if [[ "$connection_lowercase" != *".neon.tech"* ]]; then
+            echo "::error::NEON_MIGRATION_CONNECTION must point to a Neon database."
+            exit 1
+          fi
+
+      - name: Apply pending migrations
+        env:
+          NEON_MIGRATION_CONNECTION: ${{ secrets.NEON_MIGRATION_CONNECTION }}
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/resumade-migrate" \
+            --connection "$NEON_MIGRATION_CONNECTION"

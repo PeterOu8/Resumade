@@ -26,6 +26,9 @@ export async function saveResume(draft: unknown, id?: string) {
     if (error instanceof ResumeApiError && error.status === 404) {
       return { error: 'The saved resume could not be found.' };
     }
+    if (id === undefined && error instanceof ResumeApiError && error.status === 409) {
+      return { error: 'You can save up to 16 resumes. Delete a saved resume to make room, or download this draft.' };
+    }
     return { error: 'Could not save your resume. Try again in a moment.' };
   }
 

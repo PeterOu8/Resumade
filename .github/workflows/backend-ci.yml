@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   backend:
@@ -139,9 +139,17 @@ jobs:
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
           docker push "${IMAGE,,}"
 
+  migrate-database:
+    name: Migrate production database
+    needs: publish-image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/database-migrations.yml
+    secrets:
+      NEON_MIGRATION_CONNECTION: ${{ secrets.NEON_MIGRATION_CONNECTION }}
+
   deploy:
     name: Deploy backend to Azure
-    needs: publish-image
+    needs: migrate-database
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 10

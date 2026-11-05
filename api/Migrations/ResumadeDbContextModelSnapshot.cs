@@ -75,7 +75,7 @@ namespace Resumade.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "UpdatedAt", "Id");
 
                     b.ToTable("Resumes");
                 });

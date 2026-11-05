@@ -19,8 +19,8 @@ internal static class ProjectExtractor
                 foreach (var link in ExtractionText.Links(text))
                 {
                     if (ExtractionText.HasHost(link, "github.com"))
-                        project.GitHub ??= ExtractionText.NormalizeUrl(link);
-                    else project.Url ??= ExtractionText.NormalizeUrl(link);
+                        project.GitHub ??= ExtractionText.NormaliseUrl(link);
+                    else project.Url ??= ExtractionText.NormaliseUrl(link);
                 }
 
                 text = ExtractionText.RemoveLinks(text);

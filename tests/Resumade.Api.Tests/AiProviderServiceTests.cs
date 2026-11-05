@@ -44,6 +44,56 @@ public sealed class AiProviderServiceTests
         else Assert.Equal("test-api-key", handler.BearerToken);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CompleteAsync_HandlesCancellationAfterHeaders(bool cancelCaller)
+    {
+        using var body = new StalledBody();
+        using var client = new HttpClient(new StalledProviderHandler(body))
+        {
+            Timeout = cancelCaller ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(1)
+        };
+        using var caller = new CancellationTokenSource();
+        var service = new AiProviderService(client);
+
+        var completion = service.CompleteAsync(
+            new AiConnectionDto { Provider = "openai", ApiKey = "test-api-key" },
+            "System prompt", "User prompt", caller.Token);
+
+        var testTimeout = TimeSpan.FromSeconds(5);
+        await body.ReadStarted.Task.WaitAsync(testTimeout);
+        if (cancelCaller)
+        {
+            await caller.CancelAsync();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => completion.WaitAsync(testTimeout));
+        }
+        else
+        {
+            var error = await Assert.ThrowsAsync<AiProviderException>(() => completion.WaitAsync(testTimeout));
+            Assert.Equal(504, error.StatusCode);
+        }
+    }
+
+    private sealed class StalledProviderHandler(StalledBody body) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StreamContent(body) });
+    }
+
+    private sealed class StalledBody : MemoryStream
+    {
+        public TaskCompletionSource ReadStarted { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ReadStarted.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return 0;
+        }
+    }
+
     private sealed class ProviderHandler(string provider) : HttpMessageHandler
     {
         public Uri? RequestUri { get; private set; }
