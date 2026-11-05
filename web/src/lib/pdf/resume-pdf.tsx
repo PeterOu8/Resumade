@@ -15,6 +15,7 @@ import type { ChildNode, Element, Text as DomText } from 'domhandler';
 import type { ReactElement, ReactNode } from 'react';
 
 import type { ResumeContent } from '@/lib/resume/resume.schema';
+import { formatResumeDate } from '@/lib/resume/date-format';
 import {
   sectionTitles,
   type CustomOptions,
@@ -191,7 +192,7 @@ function joinDetails(...parts: (string | null | undefined)[]) {
 }
 
 function dateRange(item: ResumeContent['experience'][number] | ResumeContent['education'][number]) {
-  return [item.startDate, item.current ? 'Present' : item.endDate].filter((date) => date?.trim()).join(' – ');
+  return [formatResumeDate(item.startDate), item.current ? 'Present' : formatResumeDate(item.endDate)].filter(Boolean).join(' – ');
 }
 
 type Context = { settings: PreviewSettings; options: PdfOptions };

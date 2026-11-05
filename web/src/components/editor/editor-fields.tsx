@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { editorInputClass } from './editor-styles';
 import { ItemList } from './item-list';
 import { RichTextEditor } from './rich-text-editor';
+import { formatResumeDate } from '@/lib/resume/date-format';
 
 type TextFieldProps = Pick<ComponentProps<typeof Input>, 'type' | 'disabled' | 'placeholder' | 'className'> & {
   label: string;
@@ -45,14 +46,14 @@ export function DateRangeFields({
     <>
       <TextField
         label="Start date"
-        placeholder="YYYY or YYYY-MM"
-        value={value.startDate}
+        placeholder="e.g. Jan 2025"
+        value={formatResumeDate(value.startDate)}
         onChange={(startDate) => onChange({ ...value, startDate })}
       />
       <TextField
         label="End date"
-        placeholder={value.current ? 'Present' : 'YYYY or YYYY-MM'}
-        value={value.current ? '' : value.endDate}
+        placeholder={value.current ? 'Present' : 'e.g. Mar 2026'}
+        value={value.current ? '' : formatResumeDate(value.endDate)}
         disabled={value.current}
         onChange={(endDate) => onChange({ ...value, endDate })}
       />

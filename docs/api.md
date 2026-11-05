@@ -92,7 +92,7 @@ Create and update use the same request shape. `title` and `content` are required
         "company": "Example Company",
         "title": "Developer",
         "location": "Sydney",
-        "startDate": "2025-01",
+        "startDate": "Jan 2025",
         "endDate": null,
         "current": true,
         "bullets": ["Built and maintained internal web applications."]
@@ -112,8 +112,8 @@ Create and update use the same request shape. `title` and `content` are required
         "school": "Example University",
         "degree": "Bachelor of Information Technology",
         "major": "Software Development",
-        "startDate": "2020-02",
-        "endDate": "2023-11",
+        "startDate": "Feb 2020",
+        "endDate": "Nov 2023",
         "current": false,
         "location": "Sydney",
         "awards": []
@@ -125,7 +125,7 @@ Create and update use the same request shape. `title` and `content` are required
 
 Resume responses contain `id`, `title`, the structured `content` object, `createdAt`, and `updatedAt`. Creation and update timestamps are generated in UTC. A PUT replaces the complete content object; it does not merge individual sections.
 
-The content fields are defined in `api/Dtos/Resumes/ResumeContentDto.cs`. Experience and education dates are strings: the example uses `YYYY-MM`, but the DTOs do not validate a date format or enforce consistency between `current` and `endDate`. There is no deeper field validation on the nested content DTOs.
+The content fields are defined in `api/Dtos/Resumes/ResumeContentDto.cs`. Experience and education dates are strings. The editor presents numeric legacy values such as `2025-01` as `Jan 2025`, while imported month names and abbreviations remain unchanged. The DTOs do not validate a date format or enforce consistency between `current` and `endDate`. There is no deeper field validation on the nested content DTOs.
 
 ## Resume content extraction
 
@@ -189,7 +189,7 @@ Additional sections remain separate, including repeated headings, and retain the
 
 For unfamiliar headings, grouping compares font and size with recognized section headings, then considers capitalization, body-text size, and separation from the preceding line. Without recognized section styles, it uses a conservative bold, uppercase heading fallback with increased size or separation. Smaller entry titles, job titles, bullets, and the first content line are excluded from this fallback detection. Ambiguous headings without sufficient formatting may remain in the preceding section. This is plain-text preservation, not extraction into employment or project fields.
 
-English month names and common numeric month/year formats normalize to `YYYY-MM`; year-only dates retain `YYYY`. Existing Spanish month spellings are also supported. An explicit “Present”, “Current”, or “Now” range sets `current: true` and `endDate: null`. A lone experience date becomes `startDate`; a lone education date becomes the graduation `endDate`. Missing dates do not imply current employment or study.
+English month names, common numeric month/year formats, and existing Spanish month spellings are recognized. The parser preserves the matched date text instead of rewriting it. The editor, preview, and downloaded PDF display numeric values in `Mon YYYY` form and retain imported month wording such as `Jan 2025` or `January 2025`. An explicit “Present”, “Current”, or “Now” range sets `current: true` and `endDate: null`. A lone experience date becomes `startDate`; a lone education date becomes the graduation `endDate`. Missing dates do not imply current employment or study.
 
 Descriptions and skill spelling are preserved. Projects only include technologies explicitly listed under labels such as `Tech stack:` or `Technologies:`. Education majors come from explicit major labels or a degree's “in” phrase. The parser does not infer missing employers, technologies, or qualifications. This is a best-effort parser for common layouts, not a trained entity-recognition model; ambiguous header ordering or entries without structural boundaries can need manual correction.
 

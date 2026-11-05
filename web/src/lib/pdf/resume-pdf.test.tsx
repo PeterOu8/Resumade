@@ -61,6 +61,8 @@ describe('frontend resume PDF', () => {
     expect(result.text).toContain('Alex Morgan');
     expect(result.text).toContain('client-side PDF');
     expect(result.text).toContain('Engineering');
+    expect(result.text).toContain('Jan 2024 – Present');
+    expect(result.text).not.toContain('2024-01');
     expect(result.viewport.width).toBeCloseTo(612, 0);
     expect(result.viewport.height).toBeCloseTo(792, 0);
   }, 15_000);

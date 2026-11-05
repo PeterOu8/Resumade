@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 import type { ResumeContent } from '@/lib/resume/resume.schema';
+import { formatResumeDate } from '@/lib/resume/date-format';
 
 import { sectionTitles, type CustomOptions, type PageMargins, type ResumeTheme, type SectionKey } from './constants';
 import { PreviewText, safeLink } from './preview-text';
@@ -24,7 +25,7 @@ function joinDetails(...parts: (string | null | undefined)[]) {
 }
 
 function dateRange({ startDate, endDate, current }: ResumeContent['experience'][number] | ResumeContent['education'][number]) {
-  return [startDate, current ? 'Present' : endDate].filter((date) => date?.trim()).join(' – ');
+  return [formatResumeDate(startDate), current ? 'Present' : formatResumeDate(endDate)].filter(Boolean).join(' – ');
 }
 
 function ContactLink({ value, protocol = '' }: { value: string; protocol?: string }) {
