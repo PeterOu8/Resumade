@@ -20,12 +20,10 @@ internal sealed class ResumadeDbContextFactory :
             .AddEnvironmentVariables()
             .Build();
         var connectionString = configuration.GetConnectionString("ResumadeDatabase");
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException(
-                "ConnectionStrings:ResumadeDatabase is missing in configuration.");
 
+        // Bundling needs provider metadata only; migration execution supplies its connection separately.
         var options = new DbContextOptionsBuilder<ResumadeDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(string.IsNullOrWhiteSpace(connectionString) ? null : connectionString)
             .Options;
 
         return new ResumadeDbContext(options);

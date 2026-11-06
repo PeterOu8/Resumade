@@ -57,7 +57,7 @@ The API listens at [localhost:5011](http://localhost:5011). Check [health](http:
 
 Apply migrations to the intended local database before testing account operations. The API applies migrations only when you run the EF command. `SimplifyResume` removes the former `IsPrimary`, `Style`, and `ThemeColor` columns.
 
-The design-time database factory loads optional app settings, API user secrets, and then environment variables. Migration bundles can run from a release-job directory without an app settings file when a connection is supplied by the environment or bundle command.
+The design-time database factory loads optional app settings, API user secrets, and then environment variables. Model inspection and migration-bundle compilation can run without a database connection or credentials. Applying migrations requires a configured connection or the bundle's `--connection` argument. Migration bundles can run from a release-job directory without an app settings file.
 
 JWT issuer and audience default to `Resumade` and `ResumadeUsers`. Use `Jwt__Issuer` and `Jwt__Audience` if you need to override them.
 
