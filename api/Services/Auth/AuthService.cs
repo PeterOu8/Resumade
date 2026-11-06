@@ -101,7 +101,7 @@ namespace Resumade.Api.Services.Auth
 
             try
             {
-                await _emailSender.SendAsync(user.Email, verify ? "Verify your email" : "Reset your password",
+                await _emailSender.SendAsync(user.Email, verify ? "Verify your email address" : "Reset your password",
                     verify ? "/verify-email" : "/reset-password", rawToken);
             }
             catch (Exception)

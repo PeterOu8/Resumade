@@ -1,70 +1,70 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { z } from 'zod';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { toast } from '@/components/ui/toast';
 import { takePdfImport } from '@/lib/resume/import-handoff';
-import { createEmptyResumeDraft, resumeDraftSchema, type ResumeDraft } from '@/lib/resume/resume.schema';
-
-import { defaultPreviewSettings, defaultSectionOrder, sectionTitles, type PreviewSettings, type SectionKey } from './preview/constants';
+import { createEmptyResumeDraft, type ResumeDraft } from '@/lib/resume/resume.schema';
+import {
+  defaultPreviewSettings,
+  defaultSectionOrder,
+  type PreviewSettings,
+  type SectionKey,
+  type ResumePresentation,
+} from '@/features/resume-document/document.schema';
+import { rememberGuestDraft } from '@/features/resume-document/guest-drafts';
+import { readDraft, writeDraft, type ResumeSnapshot as Snapshot } from '@/features/resume-document/draft-storage';
 
 const defaultStorageKey = 'resumade.editor.draft.v1';
 const delayMs = 750;
 const coalesceMs = 1200;
 const maxHistory = 50;
-const sectionOrderSchema = z.array(z.enum(Object.keys(sectionTitles) as [SectionKey, ...SectionKey[]]));
-const settingsSchema = z.object({
-  style: z.enum(['classic', 'modern', 'custom']),
-  paper: z.enum(['a4', 'letter']),
-  theme: z.object({ accent: z.string(), text: z.string() }),
-  margins: z.object({ top: z.number(), right: z.number(), bottom: z.number(), left: z.number() }),
-  custom: z.object({
-    font: z.enum(['sans', 'serif', 'mono']),
-    alignment: z.enum(['left', 'center']),
-    headings: z.enum(['plain', 'rule', 'band']),
-    density: z.enum(['compact', 'comfortable']),
-  }),
-});
-const snapshotSchema = z.object({ draft: resumeDraftSchema, sectionOrder: sectionOrderSchema, settings: settingsSchema.optional().default(defaultPreviewSettings) });
-
-type Snapshot = z.infer<typeof snapshotSchema>;
+type Recovery = { snapshot: Snapshot; updatedAt?: string };
 type History = { undo: Snapshot[]; redo: Snapshot[] };
 type SaveStatus = 'saved' | 'unsaved' | 'error';
 
 const initialSnapshot: Snapshot = { draft: createEmptyResumeDraft(), sectionOrder: defaultSectionOrder, settings: defaultPreviewSettings };
 
-function readDraft(storageKey: string): Snapshot | null {
-  try {
-    const parsed = snapshotSchema.safeParse(JSON.parse(localStorage.getItem(storageKey) ?? 'null'));
-    if (!parsed.success) return null;
-    const unique = new Set(parsed.data.sectionOrder);
-    if (unique.size !== defaultSectionOrder.length || defaultSectionOrder.some((key) => !unique.has(key))) return null;
-    return parsed.data;
-  } catch {
-    return null;
-  }
-}
-
 export function useResumeDocument({
   initialStyle,
   initialImportId,
   initialDraft,
+  initialPresentation,
   draftScope,
+  fallbackDraftScope,
+  cloudDocument = false,
+  signedIn = false,
 }: {
   initialStyle?: PreviewSettings['style'];
   initialImportId?: string;
   initialDraft?: ResumeDraft;
+  initialPresentation?: ResumePresentation;
   draftScope?: string;
+  fallbackDraftScope?: string;
+  cloudDocument?: boolean;
+  signedIn?: boolean;
 }) {
-  const storageKey = initialDraft ? null : draftScope ? `${defaultStorageKey}.${draftScope}` : defaultStorageKey;
-  const [snapshot, setSnapshot] = useState(() =>
-    initialDraft ? { ...initialSnapshot, draft: initialDraft } : initialSnapshot,
-  );
+  const storageKey = draftScope ? `${defaultStorageKey}.${draftScope}` : defaultStorageKey;
+  const fallbackStorageKey = fallbackDraftScope
+    ? `${defaultStorageKey}.${fallbackDraftScope}`
+    : draftScope === 'guest.default' ? defaultStorageKey : null;
+  const serverSnapshot = useMemo<Snapshot>(() => initialDraft
+    ? {
+        draft: initialDraft,
+        sectionOrder: initialPresentation?.sectionOrder ?? defaultSectionOrder,
+        settings: initialPresentation?.settings ?? defaultPreviewSettings,
+      }
+    : initialSnapshot, [initialDraft, initialPresentation]);
+  const [snapshot, setSnapshot] = useState(serverSnapshot);
   const [history, setHistory] = useState<History>({ undo: [], redo: [] });
   const [status, setStatus] = useState<SaveStatus>('saved');
   const [generation, setGeneration] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [recovery, setRecovery] = useState<Recovery | null>(null);
+  const [backupAvailable, setBackupAvailable] = useState(false);
+  const backupKey = `${storageKey}.recovery`;
   const currentRef = useRef(snapshot);
+  const needsLocalWriteRef = useRef(false);
   const historyRef = useRef(history);
   const lastEditRef = useRef({ label: '', at: 0 });
 
@@ -72,9 +72,41 @@ export function useResumeDocument({
     let active = true;
     queueMicrotask(() => {
       if (!active) return;
-      if (currentRef.current !== initialSnapshot) return;
+      if (currentRef.current !== serverSnapshot) return;
 
-      const restored = storageKey ? readDraft(storageKey) : null;
+      setReady(true);
+      try {
+        const backup = JSON.parse(localStorage.getItem(backupKey) ?? 'null');
+        if (backup?.expiresAt > Date.now()) setBackupAvailable(true);
+        else localStorage.removeItem(backupKey);
+      } catch { /* Invalid backups are ignored. */ }
+      let restored = readDraft(storageKey);
+      let guestRecovered = false;
+      if (!restored && fallbackStorageKey) {
+        restored = readDraft(fallbackStorageKey);
+        if (restored) {
+          guestRecovered = true;
+          try {
+            localStorage.setItem(storageKey, localStorage.getItem(fallbackStorageKey) ?? JSON.stringify(restored));
+            localStorage.removeItem(fallbackStorageKey);
+          } catch {
+            // The recovered draft remains at its original key if migration fails.
+          }
+        }
+      }
+      if (cloudDocument && restored && JSON.stringify(restored) !== JSON.stringify(serverSnapshot)) {
+        let updatedAt: string | undefined;
+        try { updatedAt = JSON.parse(localStorage.getItem(storageKey) ?? 'null')?.updatedAt; } catch { /* Legacy drafts have no timestamp. */ }
+        setRecovery({ snapshot: restored, updatedAt });
+        return;
+      }
+      if (cloudDocument && restored) {
+        localStorage.removeItem(storageKey);
+        restored = null;
+      }
+      if (signedIn && !cloudDocument && (guestRecovered || restored)) {
+        toast.add({ title: 'Your draft is ready to save to your account.', type: 'success' });
+      }
       const imported = initialImportId ? takePdfImport(initialImportId) : null;
       if (initialImportId && !imported && !restored) {
         toast.add({
@@ -85,7 +117,7 @@ export function useResumeDocument({
       }
       if (!restored && !initialStyle && !imported) return;
 
-      const base = restored ?? initialSnapshot;
+      const base = restored ?? serverSnapshot;
       const next = initialStyle
         ? { ...base, settings: { ...base.settings, style: initialStyle } }
         : base;
@@ -101,30 +133,37 @@ export function useResumeDocument({
         setHistory(updated);
         toast.add({ title: 'Resume imported', type: 'success' });
       }
-      if (imported || next.settings.style !== base.settings.style) setStatus('unsaved');
+      if ((restored && cloudDocument) || imported || next.settings.style !== base.settings.style) {
+        needsLocalWriteRef.current = true;
+        setStatus('unsaved');
+      }
     });
     return () => { active = false; };
-  }, [initialStyle, initialImportId, storageKey]);
+  }, [initialStyle, initialImportId, storageKey, fallbackStorageKey, cloudDocument, serverSnapshot, signedIn, backupKey]);
 
   useEffect(() => {
     if (!storageKey || status !== 'unsaved') return;
     const timer = window.setTimeout(() => {
       try {
-        localStorage.setItem(storageKey, JSON.stringify(snapshot));
-        setStatus('saved');
+        writeDraft(storageKey, snapshot);
+        if (!cloudDocument) rememberGuestDraft(draftScope, snapshot.draft.title);
+        if (!cloudDocument) {
+          needsLocalWriteRef.current = false;
+          setStatus('saved');
+        }
       } catch {
         setStatus('error');
       }
     }, delayMs);
     return () => window.clearTimeout(timer);
-  }, [snapshot, status, storageKey]);
+  }, [snapshot, status, storageKey, cloudDocument, draftScope]);
 
   useEffect(() => {
     if (!storageKey) return;
     const flush = () => {
-      if (status === 'saved') return;
+      if (!needsLocalWriteRef.current) return;
       try {
-        localStorage.setItem(storageKey, JSON.stringify(currentRef.current));
+        writeDraft(storageKey, currentRef.current);
       } catch {
         // The visible error state is set by the debounced write.
       }
@@ -137,7 +176,7 @@ export function useResumeDocument({
       window.removeEventListener('pagehide', flush);
       flush();
     };
-  }, [status, storageKey]);
+  }, [storageKey]);
 
   const apply = useCallback((next: Snapshot, label: string, force = false) => {
     const previous = currentRef.current;
@@ -152,6 +191,7 @@ export function useResumeDocument({
     historyRef.current = updated;
     setHistory(updated);
     currentRef.current = next;
+    needsLocalWriteRef.current = true;
     setSnapshot(next);
     setStatus('unsaved');
     lastEditRef.current = { label, at: now };
@@ -182,6 +222,7 @@ export function useResumeDocument({
     historyRef.current = updated;
     setHistory(updated);
     currentRef.current = next;
+    needsLocalWriteRef.current = true;
     setSnapshot(next);
     setStatus('unsaved');
     setGeneration((value) => value + 1);
@@ -193,17 +234,85 @@ export function useResumeDocument({
     setGeneration((value) => value + 1);
   }, [apply]);
 
+  const markCloudSaved = useCallback((savedSnapshot: Snapshot) => {
+    if (JSON.stringify(currentRef.current) !== JSON.stringify(savedSnapshot)) return;
+    try {
+      needsLocalWriteRef.current = false;
+      localStorage.removeItem(storageKey);
+      setStatus('saved');
+    } catch {
+      setStatus('error');
+    }
+  }, [storageKey]);
+
+  const markCloudSaveFailed = useCallback(() => {
+    setStatus('error');
+  }, []);
+
+  function persistDraft() {
+    try {
+      writeDraft(storageKey, currentRef.current);
+      return true;
+    } catch {
+      setStatus('error');
+      toast.add({ title: 'Could not preserve your draft on this device. Please try again.', type: 'error' });
+      return false;
+    }
+  }
+
+  function resolveRecovery(restoreLocal: boolean) {
+    if (!recovery) return;
+    if (restoreLocal) {
+      apply(recovery.snapshot, 'Restore local edits', true);
+      setGeneration((value) => value + 1);
+    } else {
+      try {
+        localStorage.setItem(backupKey, JSON.stringify({
+          ...recovery.snapshot, updatedAt: recovery.updatedAt, expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        }));
+        localStorage.removeItem(storageKey);
+        setBackupAvailable(true);
+      } catch {
+        toast.add({ title: 'Could not keep a recovery copy. Please try again.', type: 'error' });
+        return;
+      }
+    }
+    setRecovery(null);
+  }
+
+  function recoverBackup() {
+    try {
+      const record = JSON.parse(localStorage.getItem(backupKey) ?? 'null');
+      const saved = readDraft(backupKey);
+      if (saved && record?.expiresAt > Date.now()) {
+        apply(saved, 'Recover previous local draft', true);
+        setGeneration((value) => value + 1);
+      }
+      setBackupAvailable(false);
+    } catch {
+      toast.add({ title: 'The recovery copy could not be opened.', type: 'error' });
+    }
+  }
+
   return {
     ...snapshot,
     status,
     canUndo: history.undo.length > 0,
     canRedo: history.redo.length > 0,
     generation,
+    ready,
+    recovery,
+    backupAvailable,
+    resolveRecovery,
+    recoverBackup,
+    persistDraft,
     updateDraft,
     updateSectionOrder,
     updateSettings,
     undo: () => restore('undo'),
     redo: () => restore('redo'),
     importDraft,
+    markCloudSaved,
+    markCloudSaveFailed,
   };
 }

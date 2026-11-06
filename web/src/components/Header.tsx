@@ -45,8 +45,11 @@ async function AccountNavigation() {
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-header-border bg-header shadow-header backdrop-blur-md print:hidden">
-      <nav aria-label="Primary" className="mx-auto flex h-header max-w-[1500px] items-center justify-between gap-2 px-4 sm:gap-3 sm:px-7">
+    <header className="sticky top-0 z-50 w-full shrink-0 border-b border-header-border bg-header shadow-header backdrop-blur-md print:hidden">
+      <nav
+        aria-label="Primary"
+        className="mx-auto flex h-header max-w-[1500px] items-center justify-between gap-2 px-4 sm:gap-3 sm:px-7"
+      >
         <ResumadeLogo />
         <Suspense>
           <AccountNavigation />

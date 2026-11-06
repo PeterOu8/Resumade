@@ -21,7 +21,7 @@ draft.content = {
     location: 'Sydney',
     linkedIn: 'https://linkedin.com/in/alex',
   },
-  summary: '<p>Builds <strong>accessible</strong> products.</p>',
+  summary: '<p>Builds <em>thoughtful</em> and <strong><em>accessible</em></strong> products.</p>',
   keySkills: [{ category: 'Engineering', items: ['TypeScript', 'C#'] }],
   experience: [{
     company: 'Example Company', title: 'Engineer', location: 'Sydney',
@@ -60,6 +60,7 @@ describe('frontend resume PDF', () => {
     expect(result.buffer.subarray(0, 5).toString()).toBe('%PDF-');
     expect(result.text).toContain('Alex Morgan');
     expect(result.text).toContain('client-side PDF');
+    expect(result.text).toContain('thoughtful');
     expect(result.text).toContain('Engineering');
     expect(result.text).toContain('Jan 2024 – Present');
     expect(result.text).not.toContain('2024-01');
@@ -73,5 +74,35 @@ describe('frontend resume PDF', () => {
     expect(result.viewport.width).toBeCloseTo(595.28, 0);
     expect(result.viewport.height).toBeCloseTo(841.89, 0);
     expect(pdfFileName('Alex: Resume/2026')).toBe('Alex- Resume-2026.pdf');
+  }, 15_000);
+
+  it('paginates long resumes without dropping the final content', async () => {
+    const longResume = {
+      ...draft.content,
+      experience: Array.from({ length: 28 }, (_, index) => ({
+        company: `Company ${index + 1}`,
+        title: 'Engineer',
+        location: 'Sydney',
+        startDate: '2024-01',
+        endDate: null,
+        current: true,
+        bullets: [`Delivered accessible product improvement ${index + 1}.`],
+      })),
+    };
+    const buffer = await renderToBuffer(
+      <ResumePdfDocument
+        title="Long resume"
+        resume={longResume}
+        sectionOrder={defaultSectionOrder}
+        settings={defaultPreviewSettings}
+      />,
+    );
+    const document = await getDocument({ data: new Uint8Array(buffer) }).promise;
+    const lastPage = await document.getPage(document.numPages);
+    const text = await lastPage.getTextContent();
+    const lastPageText = text.items.flatMap((item) => 'str' in item ? [item.str] : []).join(' ');
+
+    expect(document.numPages).toBeGreaterThan(1);
+    expect(lastPageText).toContain('Delivered accessible product improvement 28.');
   }, 15_000);
 });

@@ -1,4 +1,3 @@
-using System.Text.Encodings.Web;
 using Resend;
 
 namespace Resumade.Api.Services.Auth;
@@ -28,12 +27,15 @@ public sealed class AccountEmailSender(
 
         var url = new Uri(origin, $"{path}#token={token}").AbsoluteUri;
         const string notice = "If you did not request this email, you can ignore it.";
+        var instructions = path == "/verify-email"
+            ? "Confirm your email address to finish setting up your Resumade account. This link is valid for 24 hours."
+            : "Use this link within 30 minutes to choose a new password for your Resumade account.";
         var message = new EmailMessage
         {
             From = $"Resumade <{sender.Address}>",
             Subject = $"{subject} | Resumade",
-            TextBody = $"Resumade\n\n{subject}: {url}\n\n{notice}",
-            HtmlBody = $"<h1>Resumade</h1><p><a href=\"{HtmlEncoder.Default.Encode(url)}\">{HtmlEncoder.Default.Encode(subject)}</a></p><p>{notice}</p>"
+            TextBody = $"Resumade\n\n{subject}\n\n{instructions}\n\n{url}\n\n{notice}",
+            HtmlBody = AccountEmailTemplates.AccountAction(subject, instructions, url, notice)
         };
         message.To.Add(recipient);
         await resend.EmailSendAsync(message);

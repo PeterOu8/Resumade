@@ -12,17 +12,15 @@ const layouts = {
   custom: CustomLayout,
 } satisfies Record<PreviewSettings['style'], ComponentType<LayoutProps>>;
 
-export function TemplatePreview({ styleId, ...layout }: LayoutProps & { styleId: PreviewSettings['style'] }) {
+function TemplatePreview({ styleId, ...layout }: LayoutProps & { styleId: PreviewSettings['style'] }) {
   const Layout = layouts[styleId];
   return <Layout {...layout} />;
 }
 
-export function ResumePreview({ resume, sectionOrder, settings, onSettingsChange, saveStatus, downloading, onDownload }: Pick<LayoutProps, 'resume' | 'sectionOrder'> & {
+export function ResumePreview({ resume, sectionOrder, settings, onSettingsChange, visibleOnMobile = true }: Pick<LayoutProps, 'resume' | 'sectionOrder'> & {
   settings: PreviewSettings;
   onSettingsChange: (settings: PreviewSettings) => void;
-  saveStatus?: 'saved' | 'unsaved' | 'error';
-  downloading: boolean;
-  onDownload: () => void;
+  visibleOnMobile?: boolean;
 }) {
   const { containerRef, paperRef, scale, scaledHeight } = usePaperScale(settings.paper);
   const page = paperSizes[settings.paper];
@@ -32,14 +30,11 @@ export function ResumePreview({ resume, sectionOrder, settings, onSettingsChange
     <section
       id="resume-preview"
       aria-labelledby="resume-preview-heading"
-      className="resume-print-root scroll-area h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain rounded-2xl border border-border-muted bg-surface-muted shadow-[0_18px_50px_#27356010,0_2px_10px_#27356008]"
+      className={`resume-print-root scroll-area h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain rounded-2xl border border-border-muted bg-surface-muted shadow-[0_18px_50px_#27356010,0_2px_10px_#27356008] ${visibleOnMobile ? '' : 'max-lg:hidden'}`}
     >
       <PreviewToolbar
         settings={settings}
         onChange={onSettingsChange}
-        saveStatus={saveStatus}
-        downloading={downloading}
-        onDownload={onDownload}
       />
       <style media="print">{`@page { size: ${page.cssSize}; margin: ${printMargins}; }`}</style>
       <div className="resume-preview-padding p-3 sm:p-5">

@@ -28,7 +28,7 @@ The Compose images run as unprivileged users with read-only root filesystems and
 
 ## Prerequisites
 
-- Node.js 22.13+ or 24+, and npm.
+- Node.js 22.15+ or 24+, and npm. CI and container builds use Node.js 24. The standalone account-flow tests require the module hooks available from Node.js 22.15.
 - .NET 10 SDK. Restore the repository-pinned EF Core CLI with `dotnet tool restore --tool-manifest api/.config/dotnet-tools.json`.
 - PostgreSQL with a local database named `resumade` and credentials that can apply migrations.
 
@@ -45,8 +45,11 @@ $env:Jwt__Key = '<replace-with-a-random-local-signing-key-of-at-least-32-charact
 # $env:Proxy__KnownProxies__0 = '10.0.0.10'
 
 dotnet restore Resumade.Api.slnx
-dotnet tool restore --tool-manifest api/.config/dotnet-tools.json
-dotnet tool run dotnet-ef database update --project api/Resumade.Api.csproj -- --environment Development
+Push-Location api
+dotnet tool restore
+$env:DOTNET_ENVIRONMENT = 'Development'
+dotnet tool run dotnet-ef database update --project Resumade.Api.csproj
+Pop-Location
 dotnet run --project api/Resumade.Api.csproj --launch-profile http
 ```
 
@@ -54,11 +57,13 @@ The API listens at [localhost:5011](http://localhost:5011). Check [health](http:
 
 Apply migrations to the intended local database before testing account operations. The API applies migrations only when you run the EF command. `SimplifyResume` removes the former `IsPrimary`, `Style`, and `ThemeColor` columns.
 
+The design-time database factory loads optional app settings, API user secrets, and then environment variables. Migration bundles can run from a release-job directory without an app settings file when a connection is supplied by the environment or bundle command.
+
 JWT issuer and audience default to `Resumade` and `ResumadeUsers`. Use `Jwt__Issuer` and `Jwt__Audience` if you need to override them.
 
 ## Configuration reference
 
-ASP.NET Core maps a double underscore to a configuration section separator. For example, `Jwt__Key` maps to `Jwt:Key`.
+ASP.NET Core maps a double underscore in **environment variables** to a configuration section separator. For example, `Jwt__Key` maps to `Jwt:Key`. .NET user secrets use colon-separated keys directly, such as `Resend:ApiKey`; a user-secret key named `Resend__ApiKey` will not populate that setting. Environment variables override user secrets.
 
 | Variable | Service | Required | Purpose |
 | --- | --- | --- | --- |
@@ -115,14 +120,26 @@ The API reads these settings from the hosting environment. Keep the email API ke
 
 For local email testing in Development, use the same verified sender and set `Frontend:BaseUrl` to `http://localhost:3000` in the API project's user secrets. Use `Resend:ApiKey` and `Email:FromAddress` as the hierarchical user-secret keys. Send to a mailbox you control. Automated account tests inject a recording sender.
 
+Run these commands from the repository root, replacing the key and sender with your own verified Resend configuration:
+
+```powershell
+dotnet user-secrets set "Resend:ApiKey" "<resend-sending-key>" --project api/Resumade.Api.csproj
+dotnet user-secrets set "Email:FromAddress" "local.development@resumade.lisungou.com" --project api/Resumade.Api.csproj
+dotnet user-secrets set "Frontend:BaseUrl" "http://localhost:3000" --project api/Resumade.Api.csproj
+```
+
+Restart the API after changing settings. Newly issued links use the configured frontend origin; existing emails retain their original links. Local HTTP origins are accepted only for loopback hosts in Development. In Azure Container Apps, reference the secret from a container environment variable named `Resend__ApiKey`.
+
+Email markup is defined in `api/Services/Auth/AccountEmailTemplates.cs`. `AccountEmailSender.cs` provides purpose-specific instructions and a plain-text alternative. Delivery failures are logged as a generic account email warning and still consume the per-account cooldown. Check Resend delivery events, then wait at least 60 seconds before requesting another link. Registration creates the account before delivery, so use `POST /api/auth/resend-verification` for an existing unverified account.
+
 1. Add `resumade.lisungou.com` under **Domains** in Resend. Publish the SPF and DKIM records shown by Resend in the DNS zone for `lisungou.com`, including the sending subdomain MX record shown in the dashboard. Wait for DNS propagation and click **Verify**.
 2. Disable click tracking for this sending domain so email action links open directly on the configured frontend. Use a domain-scoped sending key and configure the backend environment variables above. [Resend domain setup](https://resend.com/docs/dashboard/domains/introduction)
-3. Back up the database and apply the migrations through `20261105023732_IndexResumePagination` before deploying the API and frontend together. Run the migration bundle or `dotnet tool run dotnet-ef database update --project api/Resumade.Api.csproj` with the target database connection and existing API settings in the environment.
+3. Back up the database and apply the migrations through `20261106090000_AddResumePresentation` before deploying the API and frontend together. Run the migration bundle, or run `dotnet tool run dotnet-ef database update --project Resumade.Api.csproj` from the `api` directory with the target database connection and existing API settings in the environment.
 4. After deployment, exercise signup, verification, password reset and Google sign-in with test accounts. Check Resend delivery events and the backend's account email warning count if a message fails to arrive.
 
 Existing password accounts retain their passwords and resumes. They must verify their address before signing in. Use the API’s resend-verification endpoint to send a link for an existing unverified account. Existing Google accounts are marked verified after their next successful Google sign-in. Older API tokens lack the required security-version claim and become invalid at deployment. Sessions end at the one-hour API token deadline, even if Auth.js has renewed the cookie. Users sign in again when the session ends.
 
-Verification and password-reset links put the random token in the URL fragment. The browser action reads that fragment and submits the token explicitly, keeping it out of the initial HTTP request, server access logs, and referrer data. The database stores SHA-256 token hashes. Verification tokens last 24 hours, reset tokens last 30 minutes, redemption consumes every outstanding token for the same purpose, and successful password reset increments the account security version to invalidate existing API tokens. Registration, resend, and recovery responses avoid revealing whether an address exists. Do not log action URLs, raw tokens, recipient addresses, or provider response bodies.
+Verification and password-reset links put the random token in the URL fragment. The browser action reads that fragment and submits the token explicitly, keeping it out of the initial HTTP request, server access logs, and referrer data. The database stores SHA-256 token hashes. Verification tokens last 24 hours, reset tokens last 30 minutes, redemption consumes every outstanding token for the same purpose, and successful password reset increments the account security version to invalidate existing API tokens. Registration returns `409` for an existing address. Resend and recovery responses avoid revealing whether an address exists. Do not log action URLs, raw tokens, recipient addresses, or provider response bodies.
 
 The IP limiter runs per API instance. PostgreSQL enforces per-account email limits across instances. Email requests return a generic response and send synchronously, so delivery can affect response timing. Failed sends count toward the cooldown and can be retried after the limit clears.
 
@@ -142,7 +159,7 @@ GitHub Actions runs **Frontend CI** and **Backend CI** on Ubuntu. Both workflows
 
 ### Frontend checks
 
-Changes under `web/` or to the root `.npmrc` run these checks. CI uses Node.js 24 and caches npm downloads using `web/package-lock.json`. Run the same commands from the repository root in PowerShell.
+Changes under `web/` or to shared CI configuration run these checks. CI uses Node.js 24 and caches npm downloads using `web/package-lock.json`. Run the same commands from the repository root in PowerShell.
 
 ```powershell
 Set-Location web

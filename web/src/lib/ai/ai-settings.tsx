@@ -18,14 +18,14 @@ import { DialogCloseButton, DialogShell } from '@/components/ui/dialog-shell';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-export const aiProviderSchema = z.enum([
+const aiProviderSchema = z.enum([
   'openai',
   'claude',
   'grok',
   'gemini',
   'deepseek',
 ]);
-export type AiProvider = z.infer<typeof aiProviderSchema>;
+type AiProvider = z.infer<typeof aiProviderSchema>;
 
 const providers: ReadonlyArray<{
   value: AiProvider;
@@ -58,7 +58,7 @@ const settingsKey = 'resumade.ai.settings.v1';
 const secretsKey = 'resumade.ai.keys.v1';
 
 type AiSettings = z.infer<typeof persistedSettingsSchema>;
-export type AiConnection = {
+type AiConnection = {
   provider: AiProvider;
   model: string;
   apiKey: string;

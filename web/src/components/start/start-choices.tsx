@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight, FileUp, LayoutTemplate, PanelsTopLeft } from 'lucide-react';
@@ -8,6 +8,7 @@ import type { LucideIcon } from 'lucide-react';
 
 import { ImportPdfDialog } from './import-pdf-dialog';
 import { importedResumePath } from '@/lib/resume/import-handoff';
+import { readGuestDrafts, type GuestDraftSummary } from '@/features/resume-document/guest-drafts';
 
 type StartChoice = {
   title: string;
@@ -47,6 +48,12 @@ function ChoiceContent({ choice }: { choice: StartChoice }) {
 export function StartChoices() {
   const router = useRouter();
   const [importOpen, setImportOpen] = useState(false);
+  const [drafts, setDrafts] = useState<GuestDraftSummary[]>([]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDrafts(readGuestDrafts()), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const choices: StartChoice[] = [
     {
@@ -88,6 +95,28 @@ export function StartChoices() {
           ),
         )}
       </div>
+      {drafts.length > 0 && (
+        <section className="mt-8" aria-labelledby="continue-draft-heading">
+          <h2 id="continue-draft-heading" className="text-sm font-semibold text-foreground-strong">
+            Continue a draft
+          </h2>
+          <p className="mt-1 text-xs text-foreground-muted">Saved on this device</p>
+          <div className="mt-3 space-y-2">
+            {drafts.map((draft) => (
+              <Link
+                key={draft.id}
+                href={`/editor?new=${draft.id}`}
+                className="flex min-h-12 items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm hover:bg-surface-hover focus-visible:outline-3 focus-visible:outline-focus"
+              >
+                <span className="truncate font-semibold text-foreground-strong">{draft.title}</span>
+                <span className="ml-4 shrink-0 text-xs text-foreground-muted">
+                  {new Intl.DateTimeFormat('en-AU', { dateStyle: 'medium' }).format(draft.updatedAt)}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       <ImportPdfDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}

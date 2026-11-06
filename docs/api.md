@@ -66,7 +66,7 @@ Saved-resume operations require a bearer token. The authenticated user's ID come
 | POST   | `/api/resumes`      | Creates a resume; returns `201`, the saved resume, and a `Location` header for retrieval. |
 | GET    | `/api/resumes`      | Returns a page of the user's resume summaries.                                            |
 | GET    | `/api/resumes/{id}` | Returns one owned resume or `404`.                                                        |
-| PUT    | `/api/resumes/{id}` | Replaces title and content, updates `updatedAt`, and returns the saved resume or `404`.   |
+| PUT    | `/api/resumes/{id}` | Replaces title and content, saves supplied presentation settings, updates `updatedAt`, and returns the saved resume or `404`. |
 | DELETE | `/api/resumes/{id}` | Permanently removes an owned resume; returns `204` or `404`.                              |
 
 The `{id}` route parameter must be a GUID. Looking up, replacing, or deleting another user's resume returns `404`, just like a missing record. List queries are also filtered by owner.
@@ -78,6 +78,10 @@ The optional `limit` query parameter defaults to 8 and accepts integers from 1 t
 An account can save up to 16 resumes. Creating a resume at the limit returns `409`. Users can still update or delete their existing resumes and download drafts from the editor.
 
 Create and update use the same request shape. `title` and `content` are required; the title has a maximum length of 200 characters and is trimmed before saving.
+
+The optional `presentation` field is returned alongside full resume content. The web app sends a version-2 object with `sectionOrder` and `settings`. Settings contain `style` (Classic, Modern, or Custom), `paper`, `theme`, millimetre `margins`, and `custom` typography. The API stores the supplied JSON. Omitting presentation during an update preserves the previous settings. Existing resumes without this field return null, and the web app uses default presentation settings.
+
+The web app supplies a default title for unnamed drafts and validates titles before account saves. The API continues to require a non-empty title from direct clients.
 
 ```json
 {

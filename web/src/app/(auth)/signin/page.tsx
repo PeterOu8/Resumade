@@ -18,9 +18,29 @@ async function SignInNotice({ searchParams }: Pick<PageProps<'/signin'>, 'search
 }
 
 export default function LoginPage({ searchParams }: PageProps<'/signin'>) {
+  const returnTo = searchParams.then(({ returnTo }) =>
+    typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')
+      ? returnTo
+      : '/dashboard',
+  );
+  return (
+    <Suspense>
+      <LoginFormWithReturn searchParams={searchParams} returnTo={returnTo} />
+    </Suspense>
+  );
+}
+
+async function LoginFormWithReturn({
+  searchParams,
+  returnTo,
+}: {
+  searchParams: PageProps<'/signin'>['searchParams'];
+  returnTo: Promise<string>;
+}) {
   return (
     <LoginForm
       className="w-full max-w-[480px]"
+      returnTo={await returnTo}
       notice={<Suspense><SignInNotice searchParams={searchParams} /></Suspense>}
     />
   );

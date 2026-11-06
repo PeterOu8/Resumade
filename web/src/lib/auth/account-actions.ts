@@ -6,7 +6,7 @@ import { apiJsonRequestOptions } from '../api/trusted-client-ip';
 import { accountEmailSchema, resetPasswordSchema, signupSchema, tokenSchema } from './auth.schema';
 
 export type AccountAction = 'register' | 'verify-email' | 'forgot-password' | 'reset-password';
-export type AccountFormState = { error?: string; success?: boolean };
+type AccountFormState = { error?: string; success?: boolean };
 
 export async function submitAccountAction(
   action: AccountAction,

@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, FileUp, History, Redo2, Save, Sparkles, Trash2, Undo2 } from 'lucide-react';
+import { ArrowLeft, Download, FileUp, History, Redo2, Save, Sparkles, Trash2, Undo2 } from 'lucide-react';
 
 import { AiSettingsButton } from '@/components/ai/ai-settings-button';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { IconButton } from '@/components/ui/icon-button';
 import { cn } from '@/lib/utils';
 
 import { editorOutlineButtonClass } from './editor-styles';
+import type { PdfDownloadState } from './use-pdf-download';
 
 type Props = {
   canUndo: boolean;
@@ -20,16 +21,22 @@ type Props = {
   hasAiResult: boolean;
   onAiResults: () => void;
   canSaveToAccount: boolean;
+  documentTitle: string;
+  saveStatus: 'saved' | 'unsaved' | 'error';
   saving: boolean;
   onSave: () => void;
   canDelete: boolean;
   deleting: boolean;
   onDelete: () => void;
+  downloading: boolean;
+  downloadState: PdfDownloadState;
+  onDownload: () => void;
 };
 
 export function EditorToolbar({
   canUndo, canRedo, onUndo, onRedo, onImport, onTailor, hasAiResult, onAiResults,
-  canSaveToAccount, saving, onSave, canDelete, deleting, onDelete,
+  canSaveToAccount, documentTitle, saveStatus, saving, onSave, canDelete, deleting, onDelete,
+  downloading, downloadState, onDownload,
 }: Props) {
   const router = useRouter();
 
@@ -44,9 +51,19 @@ export function EditorToolbar({
     }
   }
 
+  const statusLabel = saving
+    ? 'Saving...'
+    : saveStatus === 'error'
+      ? 'Save failed'
+      : saveStatus === 'unsaved'
+        ? 'Unsaved changes'
+        : canDelete
+          ? 'All changes saved'
+          : 'Saved on this device';
+
   return (
     <div className="resume-editor-toolbar flex flex-wrap items-center justify-between gap-3">
-      <div>
+      <div className="flex min-w-0 items-center gap-3">
         <Button
           type="button"
           size="sm"
@@ -56,14 +73,21 @@ export function EditorToolbar({
         >
           <ArrowLeft aria-hidden="true" /> Back
         </Button>
+        <div className="min-w-0">
+          <p className="max-w-52 truncate text-sm font-semibold text-foreground-strong">{documentTitle}</p>
+          <p role="status" className={`text-xs ${saveStatus === 'error' ? 'text-danger-foreground' : 'text-foreground-muted'}`}>
+            {statusLabel}
+          </p>
+        </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button
           type="button"
           size="sm"
-          disabled={saving || deleting}
+          disabled={saving || deleting || downloading}
           onClick={onTailor}
-          className="h-9 rounded-control bg-primary px-3 text-primary-foreground shadow-[0_5px_14px_#3558c82d] hover:bg-primary-hover"
+          variant="outline"
+          className={editorOutlineButtonClass}
         >
           <Sparkles aria-hidden="true" /> Tailor with AI
         </Button>
@@ -112,12 +136,20 @@ export function EditorToolbar({
           type="button"
           size="sm"
           variant="outline"
-          disabled={!canSaveToAccount || saving || deleting}
-          title={canSaveToAccount ? undefined : 'Sign in to save to your account'}
+          disabled={saving || deleting || downloading}
           onClick={onSave}
           className={editorOutlineButtonClass}
         >
-          <Save aria-hidden="true" /> {saving ? 'Saving…' : 'Save'}
+          <Save aria-hidden="true" /> {saving ? 'Saving...' : canSaveToAccount ? 'Save changes' : 'Save to account'}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          disabled={saving || deleting || downloading}
+          onClick={onDownload}
+          className="h-9 rounded-control bg-primary px-3 text-primary-foreground shadow-accent hover:bg-primary-hover"
+        >
+          <Download aria-hidden="true" /> {downloading ? 'Preparing PDF...' : 'Download PDF'}
         </Button>
         {canDelete && (
           <Button
@@ -132,6 +164,17 @@ export function EditorToolbar({
           </Button>
         )}
       </div>
+      {downloadState.status === 'started' && (
+        <p role="status" className="basis-full text-right text-xs text-success-foreground">
+          Download started: {downloadState.fileName}
+        </p>
+      )}
+      {downloadState.status === 'error' && (
+        <p role="alert" className="basis-full text-right text-xs text-danger-foreground">
+          {downloadState.message}{' '}
+          <button type="button" className="font-semibold underline" onClick={onDownload}>Retry</button>
+        </p>
+      )}
     </div>
   );
 }

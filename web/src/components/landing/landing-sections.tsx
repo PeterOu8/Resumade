@@ -1,10 +1,20 @@
 import Link from 'next/link';
-import { ArrowUpRight, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Coffee, Sparkles } from 'lucide-react';
 
 import { deploymentOptions, landingFeatures } from './content';
 import type { DeploymentOption, LandingFeature } from './content';
 import { EditorIllustration } from './editor-illustration';
 import { PrimaryAction, SectionKicker } from './landing-primitives';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+function GitHubIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 .7a11.5 11.5 0 0 0-3.6 22.4c.6.1.8-.2.8-.5v-2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.6.1-3.1 0 0 1-.3 3.2 1.2a11.1 11.1 0 0 1 5.8 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.5.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.8 5.4-5.5 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5A11.5 11.5 0 0 0 12 .7Z" />
+    </svg>
+  );
+}
 
 export function HeroSection() {
   return (
@@ -93,11 +103,12 @@ export function FeaturesSection() {
           </h2>
         </div>
         <p className="max-w-[435px] justify-self-end text-base leading-[1.7] text-foreground-muted max-[760px]:justify-self-start">
-          A focused editor and a live paper preview keep the writing and the
-          finished page in view together.
+          Build and export without an account or AI key. AI tailoring is an
+          optional enhancement that requires provider setup; you stay in
+          control of every suggested change.
         </p>
       </div>
-      <div className="mx-auto mt-[55px] grid max-w-[1180px] grid-cols-3 border-t border-border-subtle max-[760px]:mt-[38px] max-[760px]:grid-cols-1">
+      <div className="mx-auto mt-[55px] grid max-w-[1180px] grid-cols-4 border-t border-border-subtle max-[900px]:grid-cols-2 max-[760px]:mt-[38px] max-[620px]:grid-cols-1">
         {landingFeatures.map((feature) => (
           <FeatureCard key={feature.number} feature={feature} />
         ))}
@@ -189,9 +200,27 @@ export function ClosingSection() {
           </em>
         </h2>
       </div>
-      <PrimaryAction className="ml-auto whitespace-nowrap max-[760px]:ml-0 max-[760px]:w-full">
-        Start building
-      </PrimaryAction>
+      <div className="ml-auto flex flex-col items-stretch gap-3 max-[760px]:ml-0 max-[760px]:w-full">
+        <PrimaryAction className="whitespace-nowrap">Start building</PrimaryAction>
+        <div className="flex flex-wrap gap-2 max-[480px]:flex-col">
+          <Link
+            href="https://buymeacoffee.com/peterou8"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'min-h-11 flex-1')}
+          >
+            <Coffee aria-hidden="true" /> Support me
+          </Link>
+          <Link
+            href="https://github.com/PeterOu8/Resumade"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'min-h-11 flex-1')}
+          >
+            <GitHubIcon /> View on Github
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }

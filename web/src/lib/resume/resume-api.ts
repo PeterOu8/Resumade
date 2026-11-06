@@ -5,6 +5,7 @@ import { getToken } from 'next-auth/jwt';
 import { isCurrentApiToken } from '@/lib/auth/api-token';
 
 import { savedResumePageSchema, savedResumeSchema, type ResumeDraft } from './resume.schema';
+import type { ResumePresentation } from '@/features/resume-document/document.schema';
 
 export class ResumeApiError extends Error {
   constructor(public status: number) {
@@ -49,7 +50,7 @@ export async function getSavedResume(id: string) {
   return savedResumeSchema.parse(await requestResumes(`/${id}`));
 }
 
-export async function writeSavedResume(draft: ResumeDraft, id?: string) {
+export async function writeSavedResume(draft: ResumeDraft & { presentation: ResumePresentation }, id?: string) {
   const result = await requestResumes(id ? `/${id}` : '', {
     method: id ? 'PUT' : 'POST',
     body: JSON.stringify(draft),

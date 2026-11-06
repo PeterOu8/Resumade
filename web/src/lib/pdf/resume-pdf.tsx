@@ -346,8 +346,11 @@ export function registerResumePdfFonts(baseUrl = '') {
     family: 'EB Garamond',
     fonts: [
       { src: `${baseUrl}/fonts/eb-garamond-400.woff`, fontWeight: 400 },
+      { src: `${baseUrl}/fonts/eb-garamond-400-italic.woff2`, fontWeight: 400, fontStyle: 'italic' },
       { src: `${baseUrl}/fonts/eb-garamond-600.woff`, fontWeight: classicEmphasisWeight },
+      { src: `${baseUrl}/fonts/eb-garamond-600-italic.woff2`, fontWeight: classicEmphasisWeight, fontStyle: 'italic' },
       { src: `${baseUrl}/fonts/eb-garamond-700.woff`, fontWeight: 700 },
+      { src: `${baseUrl}/fonts/eb-garamond-700-italic.woff2`, fontWeight: 700, fontStyle: 'italic' },
     ],
   });
   fontsRegistered = true;

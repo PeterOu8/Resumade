@@ -1,11 +1,8 @@
 import { useId } from 'react';
-import { Download } from 'lucide-react';
-
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 
-import { editorInputClass, editorOutlineButtonClass } from '../editor-styles';
+import { editorInputClass } from '../editor-styles';
 import {
   layoutLabels,
   marginSides,
@@ -78,26 +75,13 @@ const densityOptions = [
   ['compact', 'Compact'],
 ] as const;
 
-const saveStatusDetails = {
-  saved: { label: 'Saved locally', dotClass: 'bg-success' },
-  unsaved: { label: 'Unsaved locally', dotClass: 'bg-warning' },
-  error: { label: 'Local save failed', dotClass: 'bg-danger' },
-} as const;
-
 export function PreviewToolbar({
   settings,
   onChange,
-  saveStatus,
-  downloading,
-  onDownload,
 }: {
   settings: PreviewSettings;
   onChange: (settings: PreviewSettings) => void;
-  saveStatus?: 'saved' | 'unsaved' | 'error';
-  downloading: boolean;
-  onDownload: () => void;
 }) {
-  const status = saveStatus ? saveStatusDetails[saveStatus] : undefined;
   const setCustom = <K extends keyof CustomOptions>(
     key: K,
     value: CustomOptions[K],
@@ -118,31 +102,6 @@ export function PreviewToolbar({
           >
             Live preview
           </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {status && (
-            <span
-              role="status"
-              className="flex items-center gap-1.5 text-xs text-foreground-muted"
-            >
-              <span
-                aria-hidden="true"
-                className={`size-1.5 rounded-full ${status.dotClass}`}
-              />
-              {status.label}
-            </span>
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className={`${editorOutlineButtonClass} font-semibold text-primary`}
-            disabled={downloading}
-            onClick={onDownload}
-          >
-            <Download aria-hidden="true" />{' '}
-            {downloading ? 'Downloading…' : 'Download'}
-          </Button>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">

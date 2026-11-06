@@ -5,12 +5,17 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { ResumeApiError, writeSavedResume } from './resume-api';
+import { resumeDocumentSchema } from '@/features/resume-document/document.schema';
 import { saveResumeRequestSchema } from './resume.schema';
 
-export async function saveResume(draft: unknown, id?: string) {
-  const input = saveResumeRequestSchema.safeParse(draft);
-  if (!input.success) {
-    return { error: input.error.issues[0]?.message ?? 'Check the resume details and try again.' };
+export async function saveResume(document: unknown, id?: string) {
+  const documentInput = resumeDocumentSchema.safeParse(document);
+  if (!documentInput.success) {
+    return { error: documentInput.error.issues[0]?.message ?? 'Check the resume details and try again.' };
+  }
+  const draftInput = saveResumeRequestSchema.safeParse(documentInput.data.draft);
+  if (!draftInput.success) {
+    return { error: draftInput.error.issues[0]?.message ?? 'Check the resume details and try again.' };
   }
   if (id !== undefined && !z.uuid().safeParse(id).success) {
     return { error: 'The saved resume could not be found.' };
@@ -18,7 +23,10 @@ export async function saveResume(draft: unknown, id?: string) {
 
   let saved;
   try {
-    saved = await writeSavedResume(input.data, id);
+    saved = await writeSavedResume({
+      ...draftInput.data,
+      presentation: documentInput.data.presentation,
+    }, id);
   } catch (error) {
     if (error instanceof ResumeApiError && error.status === 401) {
       redirect('/signin');

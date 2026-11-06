@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Resumade.Api.Infrastructure.Validation;
 
 namespace Resumade.Api.Dtos.Resumes;
@@ -12,4 +13,6 @@ public sealed class SaveResumeDto
     [Required(ErrorMessage = "Content is required")]
     [ResumeContentAttribute]
     public ResumeContentDto Content { get; set; } = null!;
+
+    public JsonElement? Presentation { get; set; }
 }

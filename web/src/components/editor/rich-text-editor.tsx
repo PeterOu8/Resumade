@@ -62,14 +62,6 @@ export function RichTextEditor({
   );
 }
 
-export function RichTextPreview({ label = 'Rich text preview', value }: RichTextFieldProps) {
-  return (
-    <Suspense fallback={null}>
-      <RichTextField label={label} value={value} />
-    </Suspense>
-  );
-}
-
 function RichTextField({
   label,
   value,

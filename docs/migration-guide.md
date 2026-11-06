@@ -1,6 +1,6 @@
 # Migration guide
 
-This guide covers the resume pagination, storage limit, startup refactor, and full-stack container changes introduced together.
+This guide describes the database requirements, client compatibility, and release checks for the current application.
 
 ## Before deployment
 
@@ -8,7 +8,7 @@ This guide covers the resume pagination, storage limit, startup refactor, and fu
 2. Deploy the web app and API as one release because the resume-list response contract changed.
 3. Configure the required secrets: database connection/password, `Jwt__Key`, and `AUTH_SECRET`.
 4. If transactional email or Google sign-in is enabled, configure those provider credentials before testing account flows.
-5. Apply migrations through `20261105023732_IndexResumePagination` using the supplied migration bundle or the pinned local EF tool.
+5. Apply migrations through `20261106090000_AddResumePresentation` using the supplied migration bundle or the pinned local EF tool from the `api` directory.
 
 Compose performs step 5 with the one-shot `migrate` service. On another platform, run the bundle as a release job before starting the new API. A separate database role with schema-change permission is preferred; the runtime API role should have only application data permissions.
 
@@ -27,16 +27,13 @@ The default and maximum page size is eight. Pass `nextCursor` back as the `curso
 
 Creating a seventeenth resume returns HTTP `409`. Existing drafts remain editable and downloadable, and users can delete a saved resume before saving another. The database update adds the owner/update/id index used by keyset pagination; it does not delete existing resumes above the limit.
 
-## Internal refactors
+## Presentation compatibility
 
-- Create and update now share `SaveResumeDto`. The external JSON shape is unchanged.
-- Cursor parsing and formatting moved from the controller into `ResumeCursor`.
-- API host composition moved from `Program.cs` into `Infrastructure/Configuration`.
-- AI connection validation and API problem parsing are shared by the Next.js route handlers.
-- Unused legacy AI proxy message types and the user-specific project file were removed.
-- Internal names and user-facing copy use Australian English where it does not conflict with framework, protocol, provider, database, or public JSON identifiers.
+`AddResumePresentation` adds the nullable `PresentationJson` column to `Resumes`. Existing resume content and account data are retained. Deploy the migration before running an API version that queries this column.
 
-These are source-level changes only unless a consumer compiled directly against the API assembly, which is not a supported integration surface.
+The web app sends a versioned `presentation` object alongside `title` and `content`. This preserves the selected template, section order, paper, margins, colours, and custom typography. Older clients can omit presentation; updates preserve stored settings. The web app supplies defaults when opening older records without presentation data.
+
+Local recovery snapshots retain their existing storage prefix and are scoped by account and workspace. They remain device-local and do not require a database migration.
 
 ## Container changes
 
@@ -58,6 +55,10 @@ Roll back application containers by immutable image tag. Do not automatically ro
 - Registration, verification, password sign-in, and Google sign-in (if enabled) work.
 - Dashboard arrows load pages of at most eight items without duplicates.
 - A malformed stored resume does not hide other dashboard entries.
+- A saved resume reopens with the same template, section order, and page settings.
+- A guest draft continues after sign-in, and a pending account save completes.
+- Local recovery offers explicit version choices and retains a dismissed copy for 24 hours.
+- The header remains visible when navigating from the editor to the homepage or templates.
 - Saving resume 17 returns a toast while the current draft remains downloadable.
 - AI provider calls time out even when the provider sends headers and stalls the body.
 - Requests from two public client IPs do not unintentionally share a rate-limit partition in the deployed proxy topology.

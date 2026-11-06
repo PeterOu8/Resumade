@@ -12,7 +12,8 @@ Resumade is a web app for building and revising resumes. Start from a template o
 - **Use AI on your terms.** Connect OpenAI, Claude, Grok, Gemini, or DeepSeek, opt in to AI-assisted PDF parsing, and tailor a draft to a job description with selective before/after approval.
 - **Edit with a live preview.** Reorder sections and entries by dragging, format descriptions with rich text, and adjust the paper size, colours, and margins.
 - **Download your current draft.** Guests and signed-in users can export a PDF using the preview’s layout and styling.
-- **Save resumes to an account.** Verify your email to sign in with a password, or use Google sign-in. Open and manage your saved resumes from the dashboard.
+- **Save resumes to an account.** Verify your email to sign in with a password, or use Google sign-in. Continue guest drafts after sign-in and save their content, template, section order, colours, and layout settings to your account.
+- **Recover recent work.** Reopen device drafts from the start page and choose between local edits and a saved account version. A dismissed local recovery copy stays available for 24 hours.
 
 ![Resume editor showing Alex Morgan's sample profile and summary alongside a Modern resume preview](docs/screenshots/editor.png)
 

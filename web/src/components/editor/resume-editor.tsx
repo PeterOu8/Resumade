@@ -1,16 +1,19 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { deleteResume } from '@/lib/resume/delete-resume';
 import { saveResume } from '@/lib/resume/save-resume';
 import type { ResumeContent, ResumeDraft } from '@/lib/resume/resume.schema';
+import { saveResumeRequestSchema } from '@/lib/resume/resume.schema';
+import type { ResumePresentation } from '@/features/resume-document/document.schema';
 import { ImportPdfDialog } from '@/components/start/import-pdf-dialog';
 import { AiTailorDialog } from './ai-tailor-dialog';
 import { toast } from '@/components/ui/toast';
 import { Panel } from '@/components/ui/panel';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { DraftRecoveryDialog } from './draft-recovery-dialog';
 
 import { TextField } from './editor-fields';
 import { EditorSection } from './editor-section';
@@ -51,7 +54,10 @@ export function ResumeEditor({
   initialStyle,
   initialImportId,
   initialDraft,
+  initialPresentation,
+  savedUpdatedAt,
   draftScope,
+  fallbackDraftScope,
   resumeId,
   aiResultScope,
   canSaveToAccount = false,
@@ -59,7 +65,10 @@ export function ResumeEditor({
   initialStyle?: PreviewSettings['style'];
   initialImportId?: string;
   initialDraft?: ResumeDraft;
+  initialPresentation?: ResumePresentation;
+  savedUpdatedAt?: string;
   draftScope?: string;
+  fallbackDraftScope?: string;
   resumeId?: string;
   aiResultScope: string;
   canSaveToAccount?: boolean;
@@ -69,23 +78,30 @@ export function ResumeEditor({
     initialStyle,
     initialImportId,
     initialDraft,
+    initialPresentation,
     draftScope,
+    fallbackDraftScope,
+    cloudDocument: Boolean(resumeId),
+    signedIn: canSaveToAccount,
   });
   const aiTailor = useAiTailorResult(aiResultScope);
   const [importOpen, setImportOpen] = useState(false);
   const [tailorOpen, setTailorOpen] = useState(false);
   const [tailorView, setTailorView] = useState<'tailor' | 'results'>('tailor');
   const [saving, setSaving] = useState(false);
+  const [titleError, setTitleError] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [savedResumeId, setSavedResumeId] = useState(resumeId);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState('');
+  const [mobileView, setMobileView] = useState<'edit' | 'preview'>('edit');
   const saveInFlight = useRef(false);
+  const resumedSave = useRef(false);
   const busy = saving || deleting;
   const { draft, sectionOrder } = document;
   const { workspaceRef, editorShare, divider } = usePreviewDivider();
   const { content } = draft;
-  const { downloading, downloadPdf } = usePdfDownload({
+  const pdfDownload = usePdfDownload({
     draft,
     sectionOrder,
     settings: document.settings,
@@ -94,7 +110,7 @@ export function ResumeEditor({
 
   async function handleDownload() {
     try {
-      await downloadPdf();
+      await pdfDownload.downloadPdf();
     } catch (error) {
       toast.add({
         title: 'PDF could not be downloaded',
@@ -105,20 +121,44 @@ export function ResumeEditor({
     }
   }
 
+  function prepareDraftForSave() {
+    const result = saveResumeRequestSchema.safeParse(draft);
+    if (!result.success) {
+      setTitleError(result.error.issues[0]?.message ?? 'Check the document title.');
+      return null;
+    }
+    setTitleError('');
+    if (result.data.title !== draft.title) {
+      document.updateDraft(result.data, 'Name document');
+    }
+    return result.data;
+  }
+
   async function saveToAccount() {
     if (!canSaveToAccount || saveInFlight.current || deleting) return;
+    const prepared = prepareDraftForSave();
+    if (!prepared) return;
     saveInFlight.current = true;
     setSaving(true);
     let openingSavedResume = false;
     try {
-      const result = await saveResume(draft, savedResumeId);
+      const result = await saveResume({
+        draft: prepared,
+        presentation: {
+          version: 2,
+          sectionOrder,
+          settings: document.settings,
+        },
+      }, savedResumeId);
       if (result.error) {
+        document.markCloudSaveFailed();
         toast.add({
           title: 'Resume could not be saved',
           description: result.error,
           type: 'error',
         });
       } else {
+        document.markCloudSaved({ draft: prepared, sectionOrder, settings: document.settings });
         toast.add({ title: 'Resume saved', type: 'success' });
         if (result.id && result.id !== savedResumeId) {
           aiTailor.moveToScope(result.id);
@@ -130,6 +170,7 @@ export function ResumeEditor({
         }
       }
     } catch {
+      document.markCloudSaveFailed();
       toast.add({
         title: 'Resume could not be saved',
         description: 'Try again in a moment.',
@@ -141,6 +182,29 @@ export function ResumeEditor({
         setSaving(false);
       }
     }
+  }
+
+  const finishPendingSave = useEffectEvent(() => {
+    const url = new URL(window.location.href);
+    if (!canSaveToAccount || !document.ready || document.recovery || resumedSave.current ||
+        url.searchParams.get('saveAfterSignIn') !== '1') return;
+    resumedSave.current = true;
+    url.searchParams.delete('saveAfterSignIn');
+    window.history.replaceState(null, '', url);
+    startTransition(() => { void saveToAccount(); });
+  });
+
+  useEffect(() => {
+    finishPendingSave();
+  }, [canSaveToAccount, document.ready, document.recovery]);
+
+  function requestSave() {
+    if (canSaveToAccount) { void saveToAccount(); return; }
+    if (!prepareDraftForSave()) return;
+    if (!document.persistDraft()) return;
+    const returnTo = new URL(window.location.href);
+    returnTo.searchParams.set('saveAfterSignIn', '1');
+    router.push(`/signin?returnTo=${encodeURIComponent(returnTo.pathname + returnTo.search)}`);
   }
 
   function requestDelete() {
@@ -270,12 +334,22 @@ export function ResumeEditor({
   return (
     <main
       ref={workspaceRef}
-      className="resume-editor-workspace mx-auto grid h-full min-h-0 w-full max-w-[1500px] grid-rows-[auto_minmax(0,1fr)_minmax(0,1fr)] items-stretch gap-4 overflow-hidden px-4 py-4 text-foreground sm:px-7 lg:grid-rows-[auto_minmax(0,1fr)]"
+      className="resume-editor-workspace mx-auto grid h-full min-h-0 w-full max-w-[1500px] grid-rows-[auto_minmax(0,1fr)] items-stretch gap-4 overflow-hidden px-4 py-4 text-foreground sm:px-7"
       style={{
         gridTemplateColumns: `minmax(0, ${editorShare}fr) 10px minmax(0, ${100 - editorShare}fr)`,
       }}
     >
       <div className="resume-editor-heading col-span-full min-h-0">
+        {document.recovery && <DraftRecoveryDialog
+          localUpdatedAt={document.recovery.updatedAt}
+          savedUpdatedAt={savedUpdatedAt}
+          onRestore={() => document.resolveRecovery(true)}
+          onOpenSaved={() => document.resolveRecovery(false)} />}
+        {document.backupAvailable && <div role="status" className="mb-3 flex flex-wrap items-center gap-3 text-sm text-foreground-muted">
+          A previous local draft is available for 24 hours.
+          <button type="button" disabled={busy || Boolean(document.recovery)} className="font-semibold text-primary underline"
+            onClick={document.recoverBackup}>Recover local edits</button>
+        </div>}
         <EditorToolbar
           canUndo={document.canUndo}
           canRedo={document.canRedo}
@@ -292,26 +366,49 @@ export function ResumeEditor({
             setTailorOpen(true);
           }}
           canSaveToAccount={canSaveToAccount}
+          documentTitle={draft.title || content.profile.fullName || 'Untitled resume'}
+          saveStatus={document.status}
           saving={saving}
-          onSave={() => void saveToAccount()}
+          onSave={requestSave}
           canDelete={Boolean(savedResumeId && canSaveToAccount)}
           deleting={deleting}
           onDelete={requestDelete}
+          downloading={pdfDownload.downloading}
+          downloadState={pdfDownload.state}
+          onDownload={() => void handleDownload()}
         />
+        <div className="mt-2 grid grid-cols-2 rounded-lg border border-border bg-surface p-1 lg:hidden" aria-label="Editor view">
+          {(['edit', 'preview'] as const).map((view) => (
+            <button
+              key={view}
+              type="button"
+              aria-pressed={mobileView === view}
+              onClick={() => setMobileView(view)}
+              className={`min-h-9 rounded-md text-sm font-semibold capitalize focus-visible:outline-3 focus-visible:outline-focus ${mobileView === view ? 'bg-primary text-primary-foreground' : 'text-foreground-muted hover:bg-muted'}`}
+            >
+              {view}
+            </button>
+          ))}
+        </div>
       </div>
       <Panel
         inert={busy}
-        className="resume-editor-form scroll-area min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6"
+        className={`resume-editor-form scroll-area min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 ${mobileView === 'edit' ? '' : 'max-lg:hidden'}`}
       >
         <div key={document.generation} className="space-y-6">
           <TextField
             label="Document title"
             value={draft.title}
             placeholder="e.g. Software Engineer Resume"
-            onChange={(title) =>
-              document.updateDraft({ ...draft, title }, 'Edit document title')
-            }
+            maxLength={200}
+            aria-invalid={Boolean(titleError)}
+            aria-describedby={titleError ? 'document-title-error' : undefined}
+            onChange={(title) => {
+              setTitleError('');
+              document.updateDraft({ ...draft, title }, 'Edit document title');
+            }}
           />
+          {titleError && <p id="document-title-error" role="alert" className="text-sm text-danger-foreground">{titleError}</p>}
           <div>
             <EditorSection title="Profile" initiallyOpen>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -356,9 +453,7 @@ export function ResumeEditor({
         sectionOrder={sectionOrder}
         settings={document.settings}
         onSettingsChange={document.updateSettings}
-        saveStatus={savedResumeId ? undefined : document.status}
-        downloading={downloading}
-        onDownload={() => void handleDownload()}
+        visibleOnMobile={mobileView === 'preview'}
       />
       <ImportPdfDialog
         open={importOpen}

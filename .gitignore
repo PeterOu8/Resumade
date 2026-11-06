@@ -25,6 +25,7 @@ bin/
 obj/
 .vs/
 .idea/
+*.csproj.user
 **/App_Data/
 
 # misc

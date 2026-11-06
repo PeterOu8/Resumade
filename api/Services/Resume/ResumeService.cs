@@ -31,6 +31,9 @@ namespace Resumade.Api.Services.Resume
                 Title = resume.Title,
                 Content = content
                     ?? throw new JsonException("Stored resume content cannot be null."),
+                Presentation = string.IsNullOrWhiteSpace(resume.PresentationJson)
+                    ? null
+                    : JsonSerializer.Deserialize<JsonElement>(resume.PresentationJson, JsonOptions),
                 CreatedAt = resume.CreatedAt,
                 UpdatedAt = resume.UpdatedAt
             };
@@ -99,7 +102,10 @@ namespace Resumade.Api.Services.Resume
             {
                 UserId = userId,
                 Title = dto.Title.Trim(),
-                ContentJson = JsonSerializer.Serialize(dto.Content, JsonOptions)
+                ContentJson = JsonSerializer.Serialize(dto.Content, JsonOptions),
+                PresentationJson = dto.Presentation is { } presentation
+                    ? presentation.GetRawText()
+                    : null
             };
 
             _context.Resumes.Add(resume);
@@ -118,6 +124,9 @@ namespace Resumade.Api.Services.Resume
 
             resume.Title = dto.Title.Trim();
             resume.ContentJson = JsonSerializer.Serialize(dto.Content, JsonOptions);
+            resume.PresentationJson = dto.Presentation is { } presentation
+                ? presentation.GetRawText()
+                : resume.PresentationJson;
             resume.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

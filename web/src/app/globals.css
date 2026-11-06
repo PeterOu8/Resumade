@@ -313,6 +313,7 @@
   }
 }
 
+/* Keep editor layout rules local: cached editor DOM can remain after navigation. */
 .scroll-area {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;

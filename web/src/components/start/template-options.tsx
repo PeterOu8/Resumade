@@ -44,7 +44,7 @@ function TemplateThumbnail({ style }: { style: TemplateOption['id'] }) {
 function TemplateCard({ template }: { template: TemplateOption }) {
   return (
     <Link
-      href={`/editor?style=${template.id}`}
+      href={`/editor?style=${template.id}&new=1`}
       className="group rounded-2xl border border-border bg-surface p-5 shadow-card transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-focus hover:shadow-card-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus motion-reduce:transition-none"
     >
       <div className="grid h-[245px] place-items-center overflow-hidden rounded-xl bg-surface-muted">

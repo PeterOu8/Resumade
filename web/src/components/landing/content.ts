@@ -2,10 +2,11 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Cloud,
   Container,
-  FileText,
+  Download,
+  FileUp,
   Laptop,
-  LayoutTemplate,
-  PenLine,
+  SlidersHorizontal,
+  Sparkles,
 } from 'lucide-react';
 
 export const previewSections = [
@@ -25,25 +26,32 @@ export type LandingFeature = {
 
 export const landingFeatures: LandingFeature[] = [
   {
-    icon: PenLine,
+    icon: FileUp,
     number: '01',
-    title: 'Write with room to think',
+    title: 'Create or import',
     description:
-      'Structured sections keep the details organised while rich text gives your summary and bullet points room to breathe.',
+      'Start with a blank resume or import an existing PDF. No account is required to begin.',
   },
   {
-    icon: LayoutTemplate,
+    icon: SlidersHorizontal,
     number: '02',
-    title: 'See every edit take shape',
+    title: 'Edit and customise',
     description:
-      'A live paper preview stays beside your work. Switch layouts, adjust colour and margins, and see the result as you write.',
+      'Add your experience, choose a template, and adjust the layout while the live preview updates.',
   },
   {
-    icon: FileText,
+    icon: Sparkles,
     number: '03',
-    title: 'Make the page yours',
+    title: 'Tailor with AI (optional)',
     description:
-      'Choose A4 or Letter, arrange sections in your order, and prepare a clean resume for printing or saving as a PDF.',
+      'Connect a supported provider and add a job description, then review every suggestion before applying it.',
+  },
+  {
+    icon: Download,
+    number: '04',
+    title: 'Save and export',
+    description:
+      'Keep the draft on this device, save it to an account, and download a professionally formatted PDF.',
   },
 ];
 

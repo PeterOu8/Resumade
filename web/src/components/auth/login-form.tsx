@@ -23,10 +23,16 @@ import { redirect } from 'next/navigation';
 const inputClassName =
   'h-11 rounded-lg border-border-strong bg-surface px-3 text-foreground-strong placeholder:text-foreground-faint focus-visible:border-primary focus-visible:ring-primary/15';
 
-async function signInWithGoogle() {
+function safeReturnTo(value: FormDataEntryValue | null) {
+  return typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')
+    ? value
+    : '/dashboard';
+}
+
+async function signInWithGoogle(formData: FormData) {
   'use server';
 
-  await signIn('google', { redirectTo: '/dashboard' });
+  await signIn('google', { redirectTo: safeReturnTo(formData.get('returnTo')) });
 }
 
 async function signInWithPassword(formData: FormData) {
@@ -36,7 +42,7 @@ async function signInWithPassword(formData: FormData) {
     await signIn('credentials', {
       email: formData.get('email'),
       password: formData.get('password'),
-      redirectTo: '/dashboard',
+      redirectTo: safeReturnTo(formData.get('returnTo')),
     });
   } catch (error) {
     if (!(error instanceof AuthError)) throw error;
@@ -52,8 +58,9 @@ async function signInWithPassword(formData: FormData) {
 export function LoginForm({
   className,
   notice,
+  returnTo = '/dashboard',
   ...props
-}: React.ComponentProps<'div'> & { notice?: React.ReactNode }) {
+}: React.ComponentProps<'div'> & { notice?: React.ReactNode; returnTo?: string }) {
   return (
     <div className={cn('min-w-0', className)} {...props}>
       <Card className="gap-0 rounded-2xl border border-border bg-card py-0 text-foreground shadow-panel ring-0">
@@ -75,6 +82,7 @@ export function LoginForm({
           <FieldGroup className="gap-5">
             {notice}
             <form action={signInWithGoogle}>
+              <input type="hidden" name="returnTo" value={returnTo} />
               <Field>
                 <Button
                   variant="outline"
@@ -99,6 +107,7 @@ export function LoginForm({
               Or continue with
             </FieldSeparator>
             <form action={signInWithPassword}>
+              <input type="hidden" name="returnTo" value={returnTo} />
               <FieldGroup className="gap-5">
                 <Field>
                   <FieldLabel

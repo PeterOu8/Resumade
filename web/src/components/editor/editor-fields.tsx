@@ -7,7 +7,7 @@ import { ItemList } from './item-list';
 import { RichTextEditor } from './rich-text-editor';
 import { formatResumeDate } from '@/lib/resume/date-format';
 
-type TextFieldProps = Pick<ComponentProps<typeof Input>, 'type' | 'disabled' | 'placeholder' | 'className'> & {
+type TextFieldProps = Pick<ComponentProps<typeof Input>, 'type' | 'disabled' | 'placeholder' | 'className' | 'maxLength' | 'aria-invalid' | 'aria-describedby'> & {
   label: string;
   value: string | null | undefined;
   onChange: (value: string) => void;

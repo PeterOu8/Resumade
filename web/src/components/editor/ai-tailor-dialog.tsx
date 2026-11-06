@@ -226,7 +226,7 @@ export function AiTailorDialog({
               className="mt-2 resize-none overflow-hidden rounded-xl"
             />
             <span className="mt-1 block text-right text-[11px] text-foreground-faint">
-              {jobDescription.length.toLocaleString()} / 20,000
+              {jobDescription.length.toLocaleString('en-AU')} / 20,000
             </span>
           </label>
 

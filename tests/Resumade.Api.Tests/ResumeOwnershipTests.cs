@@ -59,14 +59,17 @@ public sealed class ResumeOwnershipTests
         Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
 
         client.DefaultRequestHeaders.Authorization = Bearer(owner);
+        using var presentationDocument = JsonDocument.Parse("""{"version":2,"settings":{"style":"modern"}}""");
         using var created = await client.PostAsJsonAsync(path, new
         {
             Title = "Original resume",
             Content = new ResumeContentDto(),
-            UserId = other.Id
+            UserId = other.Id,
+            Presentation = presentationDocument.RootElement
         });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var resume = Assert.IsType<ResumeDto>(await created.Content.ReadFromJsonAsync<ResumeDto>());
+        Assert.Equal("modern", resume.Presentation!.Value.GetProperty("settings").GetProperty("style").GetString());
         var resumePath = $"{path}/{resume.Id}";
         var change = new SaveResumeDto { Title = "Updated resume", Content = new ResumeContentDto() };
 
@@ -102,7 +105,15 @@ public sealed class ResumeOwnershipTests
         Assert.Equal("Original resume", original?.Title);
         using var updated = await client.PutAsJsonAsync(resumePath, change);
         Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
-        Assert.Equal(change.Title, (await updated.Content.ReadFromJsonAsync<ResumeDto>())?.Title);
+        var updatedResume = await updated.Content.ReadFromJsonAsync<ResumeDto>();
+        Assert.Equal(change.Title, updatedResume?.Title);
+        Assert.Equal("modern", updatedResume!.Presentation!.Value.GetProperty("settings").GetProperty("style").GetString());
+        using var changedPresentation = JsonDocument.Parse("""{"version":2,"settings":{"style":"classic"}}""");
+        change.Presentation = changedPresentation.RootElement;
+        using var updatedLayout = await client.PutAsJsonAsync(resumePath, change);
+        Assert.Equal(HttpStatusCode.OK, updatedLayout.StatusCode);
+        Assert.Equal("classic", (await client.GetFromJsonAsync<ResumeDto>(resumePath))!
+            .Presentation!.Value.GetProperty("settings").GetProperty("style").GetString());
         using var deleted = await client.DeleteAsync(resumePath);
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
         Assert.Empty((await client.GetFromJsonAsync<ResumePageDto>(path))!.Items);

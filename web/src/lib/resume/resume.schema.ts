@@ -69,17 +69,35 @@ export const resumeDraftSchema = z.object({
   content: resumeContentSchema,
 });
 
-export const saveResumeRequestSchema = resumeDraftSchema.extend({
-  title: z
-    .string()
-    .refine(
-      (title) => title.trim().length > 0 && title.length <= 200,
-      'Enter a document title of up to 200 characters',
-    ),
+export const saveResumeRequestSchema = resumeDraftSchema.transform((draft) => ({
+  ...draft,
+  title: draft.title.trim() || (draft.content.profile.fullName.trim()
+    ? `${draft.content.profile.fullName.trim().slice(0, 190)}'s resume`
+    : 'Untitled resume'),
+})).pipe(resumeDraftSchema.extend({
+  title: z.string().max(200, 'Document title must be 200 characters or fewer.'),
+}));
+
+const presentationResponseSchema = z.object({
+  version: z.literal(2),
+  sectionOrder: z.array(z.enum(['summary', 'keySkills', 'experience', 'projects', 'education', 'additionalSections'])),
+  settings: z.object({
+    style: z.enum(['classic', 'modern', 'custom']),
+    paper: z.enum(['a4', 'letter']),
+    theme: z.object({ accent: z.string(), text: z.string() }),
+    margins: z.object({ top: z.number(), right: z.number(), bottom: z.number(), left: z.number() }),
+    custom: z.object({
+      font: z.enum(['sans', 'serif', 'mono']),
+      alignment: z.enum(['left', 'center']),
+      headings: z.enum(['plain', 'rule', 'band']),
+      density: z.enum(['compact', 'comfortable']),
+    }),
+  }),
 });
 
 export const savedResumeSchema = resumeDraftSchema.extend({
   id: z.uuid(),
+  presentation: presentationResponseSchema.nullish(),
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
 });

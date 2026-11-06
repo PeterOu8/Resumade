@@ -1,6 +1,6 @@
 import { resumeContentSchema, type ResumeContent } from '@/lib/resume/resume.schema';
 
-export type ResumeChange = {
+type ResumeChange = {
   id: string;
   path: Array<string | number>;
   label: string;
@@ -76,7 +76,7 @@ export function buildResumeChanges(before: ResumeContent, after: ResumeContent) 
   return changes;
 }
 
-export function applyResumeChanges(resume: ResumeContent, changes: ResumeChange[]) {
+function applyResumeChanges(resume: ResumeContent, changes: ResumeChange[]) {
   const next: unknown = structuredClone(resume);
   for (const change of changes) {
     if (!change.path.length) continue;

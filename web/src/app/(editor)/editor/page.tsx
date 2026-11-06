@@ -12,6 +12,7 @@ import {
 } from '@/components/editor/preview/constants';
 import { getSavedResume, ResumeApiError } from '@/lib/resume/resume-api';
 import type { ResumeDraft } from '@/lib/resume/resume.schema';
+import { createDefaultPresentation, presentationSchema, type ResumePresentation } from '@/features/resume-document/document.schema';
 
 async function EditorWithTemplate({
   searchParams,
@@ -31,14 +32,25 @@ async function EditorWithTemplate({
     typeof requestedStyle === 'string' && requestedStyle in layoutLabels
       ? (requestedStyle as PreviewSettings['style'])
       : undefined;
+  if (params.new === '1') {
+    const query = new URLSearchParams({
+      new: crypto.randomUUID(),
+      ...(initialStyle ? { style: initialStyle } : {}),
+    });
+    redirect(`/editor?${query}`);
+  }
   let initialDraft: ResumeDraft | undefined;
+  let initialPresentation: ResumePresentation | undefined;
+  let savedUpdatedAt: string | undefined;
 
   if (resumeId !== undefined) {
     if (!session?.user) redirect('/signin');
     if (!z.uuid().safeParse(resumeId).success) notFound();
     try {
-      const { title, content } = await getSavedResume(resumeId);
+      const { title, content, presentation, updatedAt } = await getSavedResume(resumeId);
+      savedUpdatedAt = updatedAt;
       initialDraft = { title, content };
+      initialPresentation = presentationSchema.catch(createDefaultPresentation()).parse(presentation);
     } catch (error) {
       if (error instanceof ResumeApiError && error.status === 404) notFound();
       if (error instanceof ResumeApiError && error.status === 401) redirect('/signin');
@@ -65,12 +77,15 @@ async function EditorWithTemplate({
       initialStyle={initialStyle}
       initialImportId={resumeId ? undefined : importId}
       initialDraft={initialDraft}
+      initialPresentation={initialPresentation}
+      savedUpdatedAt={savedUpdatedAt}
       resumeId={resumeId}
       aiResultScope={resumeId ?? `${session?.user?.id ?? 'guest'}.${workspace}`}
       canSaveToAccount={Boolean(session?.user)}
-      draftScope={
-        workspace !== 'default'
-          ? `${session?.user?.id ?? 'guest'}.${workspace}`
+      draftScope={`${session?.user?.id ?? 'guest'}.${workspace}`}
+      fallbackDraftScope={
+        session?.user && !resumeId
+          ? `guest.${workspace}`
           : undefined
       }
     />

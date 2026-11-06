@@ -1,7 +1,7 @@
 import type { TextItem as PdfTextItem } from 'pdfjs-dist/types/src/display/api';
 
 // Keep this contract aligned with the API's TextItemDto.
-export type TextItem = {
+type TextItem = {
   text: string;
   x: number;
   y: number;
@@ -11,7 +11,7 @@ export type TextItem = {
   hasEOL: boolean;
 };
 
-export type TextItems = TextItem[];
+type TextItems = TextItem[];
 
 const maxItems = 50_000;
 
