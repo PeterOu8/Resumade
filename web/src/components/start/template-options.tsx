@@ -1,7 +1,13 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 
 import { layoutLabels, type PreviewSettings } from '@/components/editor/preview/constants';
+import { guestDraftLimitReached } from '@/features/resume-document/guest-drafts';
+import { GuestDraftLimitDialog } from './guest-draft-limit-dialog';
+import { toast } from '@/components/ui/toast';
 
 type TemplateOption = {
   id: PreviewSettings['style'];
@@ -41,10 +47,21 @@ function TemplateThumbnail({ style }: { style: TemplateOption['id'] }) {
   );
 }
 
-function TemplateCard({ template }: { template: TemplateOption }) {
+function TemplateCard({ template, signedIn, onLimit }: {
+  template: TemplateOption; signedIn: boolean; onLimit: () => void;
+}) {
   return (
     <Link
       href={`/editor?style=${template.id}&new=1`}
+      onClick={(event) => {
+        if (signedIn) return;
+        try {
+          if (guestDraftLimitReached()) { event.preventDefault(); onLimit(); }
+        } catch {
+          event.preventDefault();
+          toast.add({ title: 'Browser storage is unavailable. Please sign in to continue.', type: 'error' });
+        }
+      }}
       className="group rounded-2xl border border-border bg-surface p-5 shadow-card transition-[border-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-focus hover:shadow-card-hover focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-focus motion-reduce:transition-none"
     >
       <div className="grid h-[245px] place-items-center overflow-hidden rounded-xl bg-surface-muted">
@@ -63,12 +80,16 @@ function TemplateCard({ template }: { template: TemplateOption }) {
   );
 }
 
-export function TemplateOptions() {
+export function TemplateOptions({ signedIn = false }: { signedIn?: boolean }) {
+  const [limitOpen, setLimitOpen] = useState(false);
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {templates.map((template) => (
-        <TemplateCard key={template.id} template={template} />
-      ))}
-    </div>
+    <>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {templates.map((template) => (
+          <TemplateCard key={template.id} template={template} signedIn={signedIn} onLimit={() => setLimitOpen(true)} />
+        ))}
+      </div>
+      <GuestDraftLimitDialog open={limitOpen} onClose={() => setLimitOpen(false)} />
+    </>
   );
 }

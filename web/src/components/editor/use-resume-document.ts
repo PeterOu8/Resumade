@@ -12,7 +12,7 @@ import {
   type SectionKey,
   type ResumePresentation,
 } from '@/features/resume-document/document.schema';
-import { rememberGuestDraft } from '@/features/resume-document/guest-drafts';
+import { forgetGuestDraft, rememberGuestDraft } from '@/features/resume-document/guest-drafts';
 import { readDraft, writeDraft, type ResumeSnapshot as Snapshot } from '@/features/resume-document/draft-storage';
 
 const defaultStorageKey = 'resumade.editor.draft.v1';
@@ -89,6 +89,7 @@ export function useResumeDocument({
           try {
             localStorage.setItem(storageKey, localStorage.getItem(fallbackStorageKey) ?? JSON.stringify(restored));
             localStorage.removeItem(fallbackStorageKey);
+            if (fallbackDraftScope) forgetGuestDraft(fallbackDraftScope);
           } catch {
             // The recovered draft remains at its original key if migration fails.
           }
@@ -139,7 +140,7 @@ export function useResumeDocument({
       }
     });
     return () => { active = false; };
-  }, [initialStyle, initialImportId, storageKey, fallbackStorageKey, cloudDocument, serverSnapshot, signedIn, backupKey]);
+  }, [initialStyle, initialImportId, storageKey, fallbackStorageKey, fallbackDraftScope, cloudDocument, serverSnapshot, signedIn, backupKey]);
 
   useEffect(() => {
     if (!storageKey || status !== 'unsaved') return;

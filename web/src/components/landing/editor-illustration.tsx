@@ -35,7 +35,7 @@ export function EditorIllustration() {
             Build your story
           </div>
           <div className="mt-[13px] mb-4 rounded-md border border-[#dce1e8] px-2.5 py-2 text-[10px] text-[#6e7989]">
-            Product designer resume
+            Software Engineer resume
           </div>
 
           <div className="border-t border-[#e3e7ed]">
@@ -61,7 +61,7 @@ export function EditorIllustration() {
             SUMMARY
           </div>
           <div className="min-h-[72px] border-b-2 border-[#536bba] bg-[#f1f3f8] p-[9px] text-[10px] leading-[1.5] text-[#4d5b6d]">
-            I turn complex ideas into clear, useful experiences.
+            Software Engineer experienced in building scalable web applications
             <span className="inline-block h-[11px] border-l border-[#4768cd] align-[-2px]" />
           </div>
           <div className="flex gap-3.5 px-[9px] py-[7px] text-[10px] font-bold text-[#5a6474]">
@@ -78,41 +78,79 @@ export function EditorIllustration() {
             <span>Live preview</span>
             <span>Classic &nbsp;·&nbsp; A4</span>
           </div>
-          <div className="min-h-[375px] bg-white px-6 pt-6 pb-[18px] font-['EB_Garamond',Georgia,serif] text-[8px] leading-[1.28] text-[#252b36] shadow-[0_2px_8px_#27356018] max-[520px]:px-3 max-[520px]:pt-[15px] max-[520px]:text-[7px]">
+          <div className="min-h-[375px] bg-white px-6 pt-6 pb-[18px] font-['EB_Garamond',Georgia,serif] text-[8px] leading-[1.28] text-[#252b36] shadow-[0_2px_8px_#27356018] max-[520px]:px-3 max-[520px]:pt-3.75 max-[520px]:text-[7px]">
             <h3 className="text-[17px] leading-[1.1] font-bold max-[520px]:text-[13px]">
               Alex Morgan
             </h3>
             <p className="text-[#415cae]">
-              alex.morgan@email.com &nbsp; | &nbsp; London, UK
+              alex.morgan@email.com &nbsp; | &nbsp; Sydney, AU
             </p>
 
             <PaperSectionTitle>SUMMARY</PaperSectionTitle>
             <p>
-              I turn complex ideas into clear, useful experiences. I work across
-              research, product strategy, and thoughtful visual design.
+              Software Engineer experienced in building scalable web
+              applications.
             </p>
 
             <PaperSectionTitle>EXPERIENCE</PaperSectionTitle>
-            <div className="flex justify-between gap-[7px] text-[9px] max-[520px]:block">
-              <strong>Senior Product Designer</strong>
+            <div className="flex justify-between gap-1.75 text-[9px] max-[520px]:block">
+              <strong>Senior Software Engineer</strong>
               <span className="whitespace-nowrap">2022 — Present</span>
             </div>
-            <p>Northstar Studio · London</p>
-            <ul className="mt-1 list-[square] space-y-[3px] pl-3">
-              <li>Led product design from first sketches to launch.</li>
-              <li>Made complicated workflows feel effortless.</li>
+            <p>JobsAT Studio · Sydney</p>
+            <ul className="mt-1 list-[square] space-y-0.75 pl-3">
+              <li>
+                Built full-stack features using React, TypeScript, and .NET,
+                supporting 10,000+ active users.
+              </li>
+              <li>
+                Optimised API endpoints and database queries, reducing average
+                response times by 40%.
+              </li>
+              <li>
+                Implemented CI/CD pipelines with GitHub Actions, reducing
+                deployment time by 60%.
+              </li>
             </ul>
 
-            <PaperSectionTitle>PROJECTS</PaperSectionTitle>
+            <br />
             <div className="flex justify-between gap-[7px] text-[9px] max-[520px]:block">
-              <strong>Fieldnotes</strong>
+              <strong>Graduate Software Engineer</strong>
+              <span className="whitespace-nowrap">2022 — Present</span>
+            </div>
+            <p>John Smith Ad Agency · Sydney</p>
+            <ul className="mt-1 list-[square] space-y-0.75 pl-3">
+              <li>
+                Developed RESTful APIs and reusable React components for
+                customer-facing applications.
+              </li>
+              <li>
+                Collaborated with engineers to improve test coverage and resolve
+                production issues.
+              </li>
+            </ul>
+            <PaperSectionTitle>PROJECTS</PaperSectionTitle>
+            <div className="flex justify-between gap-1.75 text-[9px] max-[520px]:block">
+              <strong>DevFlow — Developer Productivity Platform</strong>
               <span className="whitespace-nowrap">2024</span>
             </div>
-            <p>A calmer way to collect and connect ideas.</p>
-
+            <ul className="mt-1 list-[square] space-y-0.75 pl-3">
+              <li>
+                Built a dashboard for tracking projects, tasks, and development
+                workflows.
+              </li>
+              <li>
+                Implemented secure authentication and real-time project updates.
+              </li>
+            </ul>
             <PaperSectionTitle>SKILLS</PaperSectionTitle>
             <p>
-              <strong>Design:</strong> Research, systems, prototyping
+              <strong>Frontend:</strong> React, Next.js, TypeScript, Tailwind
+              CSS
+            </p>
+            <p>
+              <strong>Backend:</strong> .NET, ASP.NET Core, C#, Node.js, REST
+              APIs
             </p>
           </div>
         </div>

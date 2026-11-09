@@ -21,7 +21,7 @@ export function HeroSection() {
     <section className="relative bg-[radial-gradient(circle_at_87%_12%,#e9edff_0,transparent_34%)] px-7 pt-[108px] pb-28 dark:bg-[radial-gradient(circle_at_87%_12%,rgba(149,173,255,0.16)_0,transparent_34%)] max-[760px]:px-5 max-[760px]:pt-[70px] max-[760px]:pb-[76px]">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[length:88px_88px] [background-image:linear-gradient(#182c5710_1px,transparent_1px),linear-gradient(90deg,#182c5710_1px,transparent_1px)] [mask-image:linear-gradient(90deg,transparent_48%,#000_100%)]"
+        className="pointer-events-none absolute inset-0 bg-size-[88px_88px] bg-[linear-gradient(#182c5710_1px,transparent_1px),linear-gradient(90deg,#182c5710_1px,transparent_1px)] [mask-image:linear-gradient(90deg,transparent_48%,#000_100%)]"
       />
       <div className="relative mx-auto grid max-w-[1330px] items-center gap-[50px] min-[1051px]:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] min-[1051px]:gap-[clamp(36px,6vw,92px)]">
         <div className="max-w-[680px] pt-4 pb-[30px]">
@@ -68,7 +68,9 @@ function FeatureCard({ feature }: { feature: LandingFeature }) {
   return (
     <article className="border-border-subtle pt-[26px] pr-7 pb-1.5 max-[760px]:border-t max-[760px]:px-0 max-[760px]:pt-6 max-[760px]:pb-7 min-[761px]:not-first:border-l min-[761px]:not-first:pl-7">
       <div className="flex justify-between text-primary">
-        <span className="font-mono text-xs text-foreground-subtle">{number}</span>
+        <span className="font-mono text-xs text-foreground-subtle">
+          {number}
+        </span>
         <Icon size={22} strokeWidth={1.6} aria-hidden="true" />
       </div>
       <h3 className="mt-[37px] text-[19px] font-[650] tracking-[-0.025em] max-[760px]:mt-4">
@@ -104,8 +106,8 @@ export function FeaturesSection() {
         </div>
         <p className="max-w-[435px] justify-self-end text-base leading-[1.7] text-foreground-muted max-[760px]:justify-self-start">
           Build and export without an account or AI key. AI tailoring is an
-          optional enhancement that requires provider setup; you stay in
-          control of every suggested change.
+          optional enhancement that requires provider setup; you stay in control
+          of every suggested change.
         </p>
       </div>
       <div className="mx-auto mt-[55px] grid max-w-[1180px] grid-cols-4 border-t border-border-subtle max-[900px]:grid-cols-2 max-[760px]:mt-[38px] max-[620px]:grid-cols-1">
@@ -201,13 +203,18 @@ export function ClosingSection() {
         </h2>
       </div>
       <div className="ml-auto flex flex-col items-stretch gap-3 max-[760px]:ml-0 max-[760px]:w-full">
-        <PrimaryAction className="whitespace-nowrap">Start building</PrimaryAction>
+        <PrimaryAction className="whitespace-nowrap">
+          Start building
+        </PrimaryAction>
         <div className="flex flex-wrap gap-2 max-[480px]:flex-col">
           <Link
             href="https://buymeacoffee.com/peterou8"
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'min-h-11 flex-1')}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'lg' }),
+              'min-h-11 flex-1',
+            )}
           >
             <Coffee aria-hidden="true" /> Support me
           </Link>
@@ -215,7 +222,10 @@ export function ClosingSection() {
             href="https://github.com/PeterOu8/Resumade"
             target="_blank"
             rel="noopener noreferrer"
-            className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'min-h-11 flex-1')}
+            className={cn(
+              buttonVariants({ variant: 'outline', size: 'lg' }),
+              'min-h-11 flex-1',
+            )}
           >
             <GitHubIcon /> View on Github
           </Link>

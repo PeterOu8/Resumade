@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { auth } from '@/auth';
 import { ResumeEditor } from '@/components/editor/resume-editor';
+import { GuestDraftGate } from '@/components/editor/guest-draft-gate';
 import {
   layoutLabels,
   type PreviewSettings,
@@ -71,7 +72,7 @@ async function EditorWithTemplate({
 
   const workspace = resumeId ?? importId ?? newId.data ?? 'default';
 
-  return (
+  const editor = (
     <ResumeEditor
       key={`${session?.user?.id ?? 'guest'}:${workspace}`}
       initialStyle={initialStyle}
@@ -89,6 +90,9 @@ async function EditorWithTemplate({
           : undefined
       }
     />
+  );
+  return session?.user ? editor : (
+    <GuestDraftGate key={workspace} workspace={workspace}>{editor}</GuestDraftGate>
   );
 }
 

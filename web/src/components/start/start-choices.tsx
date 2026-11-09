@@ -8,7 +8,9 @@ import type { LucideIcon } from 'lucide-react';
 
 import { ImportPdfDialog } from './import-pdf-dialog';
 import { importedResumePath } from '@/lib/resume/import-handoff';
-import { readGuestDrafts, type GuestDraftSummary } from '@/features/resume-document/guest-drafts';
+import { guestDraftLimitReached, readGuestDrafts, type GuestDraftSummary } from '@/features/resume-document/guest-drafts';
+import { GuestDraftLimitDialog } from './guest-draft-limit-dialog';
+import { toast } from '@/components/ui/toast';
 
 type StartChoice = {
   title: string;
@@ -48,6 +50,7 @@ function ChoiceContent({ choice }: { choice: StartChoice }) {
 export function StartChoices() {
   const router = useRouter();
   const [importOpen, setImportOpen] = useState(false);
+  const [limitOpen, setLimitOpen] = useState(false);
   const [drafts, setDrafts] = useState<GuestDraftSummary[]>([]);
 
   useEffect(() => {
@@ -87,7 +90,14 @@ export function StartChoices() {
             <button
               key={choice.title}
               type="button"
-              onClick={() => setImportOpen(true)}
+              onClick={() => {
+                try {
+                  if (guestDraftLimitReached()) setLimitOpen(true);
+                  else setImportOpen(true);
+                } catch {
+                  toast.add({ title: 'Browser storage is unavailable. Please sign in to continue.', type: 'error' });
+                }
+              }}
               className={cardClassName}
             >
               <ChoiceContent choice={choice} />
@@ -117,6 +127,7 @@ export function StartChoices() {
           </div>
         </section>
       )}
+      <GuestDraftLimitDialog open={limitOpen} onClose={() => setLimitOpen(false)} />
       <ImportPdfDialog
         open={importOpen}
         onClose={() => setImportOpen(false)}

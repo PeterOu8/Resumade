@@ -54,6 +54,8 @@ A saved resume contains its structured content and a versioned presentation cont
 
 Guest drafts are scoped to the editor workspace. After sign-in, the matching guest draft moves into the account's workspace and continues automatically. A pending Save action resumes after sign-in. An empty document title becomes the profile name followed by “'s resume”, or “Untitled resume”.
 
+Guests can create two device-local drafts. Template selection and PDF import show an account invitation at capacity, and the editor checks again before mounting, including for direct URLs. A short Web Lock serialises draft reservations across tabs where supported. Opening an existing draft remains allowed. Older snapshots count towards capacity and are retained rather than automatically deleted. Moving a guest draft into an account releases its guest slot. Account storage retains its separate 16-resume limit.
+
 When a saved resume differs from the device draft, a branded recovery dialog offers the local or account version. Equal versions open immediately. Opening the account version keeps the local snapshot recoverable for 24 hours. New local snapshots record UTC timestamps, displayed in Australian date format. Browser storage holds personal resume content, so it is a device recovery mechanism rather than a synchronisation service.
 
 The global header is rendered by the root layout on every page. Editor styles are scoped to editor elements. Next.js retains recently visited routes in hidden Activity trees, so global selectors must not infer the active route from the presence of editor DOM.
