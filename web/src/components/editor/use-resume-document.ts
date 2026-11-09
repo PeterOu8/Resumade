@@ -14,6 +14,7 @@ import {
 } from '@/features/resume-document/document.schema';
 import { forgetGuestDraft, rememberGuestDraft } from '@/features/resume-document/guest-drafts';
 import { readDraft, writeDraft, type ResumeSnapshot as Snapshot } from '@/features/resume-document/draft-storage';
+import type { EditingLease } from '@/features/resume-document/editing-lease';
 
 const defaultStorageKey = 'resumade.editor.draft.v1';
 const delayMs = 750;
@@ -34,6 +35,7 @@ export function useResumeDocument({
   fallbackDraftScope,
   cloudDocument = false,
   signedIn = false,
+  lease,
 }: {
   initialStyle?: PreviewSettings['style'];
   initialImportId?: string;
@@ -43,6 +45,7 @@ export function useResumeDocument({
   fallbackDraftScope?: string;
   cloudDocument?: boolean;
   signedIn?: boolean;
+  lease?: EditingLease;
 }) {
   const storageKey = draftScope ? `${defaultStorageKey}.${draftScope}` : defaultStorageKey;
   const fallbackStorageKey = fallbackDraftScope
@@ -75,6 +78,16 @@ export function useResumeDocument({
       if (currentRef.current !== serverSnapshot) return;
 
       setReady(true);
+      if (!lease) {
+        const local = cloudDocument ? null : readDraft(storageKey);
+        if (local) {
+          currentRef.current = local;
+          setSnapshot(local);
+          setGeneration((value) => value + 1);
+        }
+        return;
+      }
+      if (!lease.isActive()) return;
       try {
         const backup = JSON.parse(localStorage.getItem(backupKey) ?? 'null');
         if (backup?.expiresAt > Date.now()) setBackupAvailable(true);
@@ -119,7 +132,7 @@ export function useResumeDocument({
       if (!restored && !initialStyle && !imported) return;
 
       const base = restored ?? serverSnapshot;
-      const next = initialStyle
+      const next = initialStyle && !restored
         ? { ...base, settings: { ...base.settings, style: initialStyle } }
         : base;
       const hydrated = imported ? { ...next, draft: imported } : next;
@@ -140,11 +153,12 @@ export function useResumeDocument({
       }
     });
     return () => { active = false; };
-  }, [initialStyle, initialImportId, storageKey, fallbackStorageKey, fallbackDraftScope, cloudDocument, serverSnapshot, signedIn, backupKey]);
+  }, [initialStyle, initialImportId, storageKey, fallbackStorageKey, fallbackDraftScope, cloudDocument, serverSnapshot, signedIn, backupKey, lease]);
 
   useEffect(() => {
-    if (!storageKey || status !== 'unsaved') return;
+    if (!lease || status !== 'unsaved') return;
     const timer = window.setTimeout(() => {
+      if (!lease.isActive()) return;
       try {
         writeDraft(storageKey, snapshot);
         if (!cloudDocument) rememberGuestDraft(draftScope, snapshot.draft.title);
@@ -157,29 +171,35 @@ export function useResumeDocument({
       }
     }, delayMs);
     return () => window.clearTimeout(timer);
-  }, [snapshot, status, storageKey, cloudDocument, draftScope]);
+  }, [snapshot, status, storageKey, cloudDocument, draftScope, lease]);
 
   useEffect(() => {
-    if (!storageKey) return;
+    if (!lease?.isActive()) return;
+    let closed = false;
     const flush = () => {
-      if (!needsLocalWriteRef.current) return;
+      if (closed || !needsLocalWriteRef.current) return;
       try {
         writeDraft(storageKey, currentRef.current);
       } catch {
         // The visible error state is set by the debounced write.
       }
     };
+    const close = () => {
+      flush();
+      closed = true;
+    };
+    const unregister = lease.onRelease(close);
     const onHidden = () => { if (document.visibilityState === 'hidden') flush(); };
     document.addEventListener('visibilitychange', onHidden);
-    window.addEventListener('pagehide', flush);
     return () => {
       document.removeEventListener('visibilitychange', onHidden);
-      window.removeEventListener('pagehide', flush);
-      flush();
+      close();
+      unregister();
     };
-  }, [storageKey]);
+  }, [storageKey, lease]);
 
   const apply = useCallback((next: Snapshot, label: string, force = false) => {
+    if (!lease?.isActive()) return;
     const previous = currentRef.current;
     if (JSON.stringify(previous) === JSON.stringify(next)) return;
     const now = Date.now();
@@ -196,7 +216,7 @@ export function useResumeDocument({
     setSnapshot(next);
     setStatus('unsaved');
     lastEditRef.current = { label, at: now };
-  }, []);
+  }, [lease]);
 
   const updateDraft = useCallback((draft: ResumeDraft, label: string) => {
     apply({ ...currentRef.current, draft }, label);
@@ -211,6 +231,7 @@ export function useResumeDocument({
   }, [apply]);
 
   const restore = useCallback((direction: 'undo' | 'redo') => {
+    if (!lease?.isActive()) return;
     const stack = historyRef.current[direction];
     if (!stack.length) return;
     const next = stack[stack.length - 1];
@@ -228,7 +249,7 @@ export function useResumeDocument({
     setStatus('unsaved');
     setGeneration((value) => value + 1);
     lastEditRef.current = { label: '', at: 0 };
-  }, []);
+  }, [lease]);
 
   const importDraft = useCallback((draft: ResumeDraft, source = 'Import resume') => {
     apply({ ...currentRef.current, draft }, source, true);
@@ -251,6 +272,7 @@ export function useResumeDocument({
   }, []);
 
   function persistDraft() {
+    if (!lease?.isActive()) return false;
     try {
       writeDraft(storageKey, currentRef.current);
       return true;
@@ -262,7 +284,7 @@ export function useResumeDocument({
   }
 
   function resolveRecovery(restoreLocal: boolean) {
-    if (!recovery) return;
+    if (!recovery || !lease?.isActive()) return;
     if (restoreLocal) {
       apply(recovery.snapshot, 'Restore local edits', true);
       setGeneration((value) => value + 1);
@@ -282,6 +304,7 @@ export function useResumeDocument({
   }
 
   function recoverBackup() {
+    if (!lease?.isActive()) return;
     try {
       const record = JSON.parse(localStorage.getItem(backupKey) ?? 'null');
       const saved = readDraft(backupKey);

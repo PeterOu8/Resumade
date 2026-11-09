@@ -100,6 +100,8 @@ npm run dev
 
 Open [localhost:3000](http://localhost:3000). Create a local account to try the dashboard, or use **Start building** as a guest to try templates, PDF import, and download.
 
+To check the editing lock, open the same editor URL in two tabs. In the second tab, verify that **Enable editing** shows a toast without interrupting the preview or the first tab. Close the first tab and click **Enable editing** again to confirm that the second tab loads the latest draft and allows edits. Repeat for a guest draft and a saved account resume.
+
 The Download button builds the PDF in the browser from the current structured draft, section order, paper size, margins, theme, and template settings. React PDF produces selectable text and uses locally served EB Garamond files for the Classic template. The live HTML preview remains the editor display and is not sent to the backend. Rich-text markup is parsed into supported PDF text and list elements; scripts, styles, templates, SVG, MathML, event handlers, and unsafe link protocols are never passed to a browser HTML renderer. Run `npm test` to render all three templates and verify PDF signatures, selectable content, filenames, and A4/Letter dimensions.
 
 For Google sign-in, set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `web/.env.local`, set `Google__ClientId` to the same client ID for the API, and register `http://localhost:3000/api/auth/callback/google` as the local callback URL.

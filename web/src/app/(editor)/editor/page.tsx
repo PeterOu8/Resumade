@@ -92,7 +92,7 @@ async function EditorWithTemplate({
     />
   );
   return session?.user ? editor : (
-    <GuestDraftGate key={workspace} workspace={workspace}>{editor}</GuestDraftGate>
+    <GuestDraftGate key={workspace} workspace={workspace} initialStyle={initialStyle}>{editor}</GuestDraftGate>
   );
 }
 

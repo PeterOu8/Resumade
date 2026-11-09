@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Download, FileUp, History, Redo2, Save, Sparkles, Trash2, Undo2 } from 'lucide-react';
+import { ArrowLeft, Download, FileUp, History, LockKeyhole, Redo2, Save, Sparkles, Trash2, Undo2 } from 'lucide-react';
 
 import { AiSettingsButton } from '@/components/ai/ai-settings-button';
 import { Button } from '@/components/ui/button';
@@ -10,8 +10,11 @@ import { cn } from '@/lib/utils';
 
 import { editorOutlineButtonClass } from './editor-styles';
 import type { PdfDownloadState } from './use-pdf-download';
+import type { ResumeEditingStatus } from './use-resume-editing-lock';
 
 type Props = {
+  lockStatus: ResumeEditingStatus;
+  onEnableEditing: () => void;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
@@ -34,11 +37,13 @@ type Props = {
 };
 
 export function EditorToolbar({
+  lockStatus, onEnableEditing,
   canUndo, canRedo, onUndo, onRedo, onImport, onTailor, hasAiResult, onAiResults,
   canSaveToAccount, documentTitle, saveStatus, saving, onSave, canDelete, deleting, onDelete,
   downloading, downloadState, onDownload,
 }: Props) {
   const router = useRouter();
+  const readOnly = lockStatus !== 'editing';
 
   function goBack() {
     const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;
@@ -51,7 +56,7 @@ export function EditorToolbar({
     }
   }
 
-  const statusLabel = saving
+  const statusLabel = readOnly ? 'Viewing only' : saving
     ? 'Saving...'
     : saveStatus === 'error'
       ? 'Save failed'
@@ -75,12 +80,35 @@ export function EditorToolbar({
         </Button>
         <div className="min-w-0">
           <p className="max-w-52 truncate text-sm font-semibold text-foreground-strong">{documentTitle}</p>
-          <p role="status" className={`text-xs ${saveStatus === 'error' ? 'text-danger-foreground' : 'text-foreground-muted'}`}>
+          <p role="status" className={`text-xs ${!readOnly && saveStatus === 'error' ? 'text-danger-foreground' : 'text-foreground-muted'}`}>
             {statusLabel}
           </p>
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
+        {readOnly && (
+          <div className="flex flex-wrap items-center gap-3">
+            <p role="status" className="flex items-center gap-2 text-xs text-foreground-muted">
+              <LockKeyhole aria-hidden="true" className="size-4 shrink-0" />
+              {lockStatus === 'checking' ? 'Checking editing access…'
+                : lockStatus === 'busy' ? 'Editing in another tab'
+                : lockStatus === 'unsupported' ? 'Editing unavailable in this browser'
+                : 'Could not check editing access'}
+            </p>
+            {(lockStatus === 'busy' || lockStatus === 'error') && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={onEnableEditing}
+                className={editorOutlineButtonClass}
+              >
+                Enable editing
+              </Button>
+            )}
+          </div>
+        )}
+        {!readOnly && <>
         <Button
           type="button"
           size="sm"
@@ -142,6 +170,7 @@ export function EditorToolbar({
         >
           <Save aria-hidden="true" /> {saving ? 'Saving...' : canSaveToAccount ? 'Save changes' : 'Save to account'}
         </Button>
+        </>}
         <Button
           type="button"
           size="sm"
@@ -151,7 +180,7 @@ export function EditorToolbar({
         >
           <Download aria-hidden="true" /> {downloading ? 'Preparing PDF...' : 'Download PDF'}
         </Button>
-        {canDelete && (
+        {!readOnly && canDelete && (
           <Button
             type="button"
             size="sm"

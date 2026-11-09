@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createEmptyResumeDraft } from '@/lib/resume/resume.schema';
-import { createDefaultPresentation } from './document.schema';
+import { createDefaultPresentation, type PreviewSettings } from './document.schema';
 import { readDraft, writeDraft } from './draft-storage';
 
 const indexKey = 'resumade.editor.drafts.v1';
@@ -54,7 +54,7 @@ export function guestDraftLimitReached() {
   return ids.size >= maxGuestDrafts;
 }
 
-export async function reserveGuestDraft(id: string): Promise<boolean> {
+export async function reserveGuestDraft(id: string, initialStyle?: PreviewSettings['style']): Promise<boolean> {
   if (!guestIdSchema.safeParse(id).success) throw new Error('Invalid draft workspace.');
   const reserve = () => {
     const key = storageKey(id);
@@ -67,7 +67,7 @@ export async function reserveGuestDraft(id: string): Promise<boolean> {
       return true;
     }
     if (guestDraftLimitReached()) return false;
-    const presentation = createDefaultPresentation();
+    const presentation = createDefaultPresentation(initialStyle);
     writeDraft(key, {
       draft: createEmptyResumeDraft(),
       sectionOrder: presentation.sectionOrder,

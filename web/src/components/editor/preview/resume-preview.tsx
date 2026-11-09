@@ -19,7 +19,7 @@ function TemplatePreview({ styleId, ...layout }: LayoutProps & { styleId: Previe
 
 export function ResumePreview({ resume, sectionOrder, settings, onSettingsChange, visibleOnMobile = true }: Pick<LayoutProps, 'resume' | 'sectionOrder'> & {
   settings: PreviewSettings;
-  onSettingsChange: (settings: PreviewSettings) => void;
+  onSettingsChange?: (settings: PreviewSettings) => void;
   visibleOnMobile?: boolean;
 }) {
   const { containerRef, paperRef, scale, scaledHeight } = usePaperScale(settings.paper);
@@ -32,10 +32,11 @@ export function ResumePreview({ resume, sectionOrder, settings, onSettingsChange
       aria-labelledby="resume-preview-heading"
       className={`resume-print-root scroll-area h-full min-h-0 min-w-0 overflow-y-auto overscroll-contain rounded-2xl border border-border-muted bg-surface-muted shadow-[0_18px_50px_#27356010,0_2px_10px_#27356008] ${visibleOnMobile ? '' : 'max-lg:hidden'}`}
     >
-      <PreviewToolbar
-        settings={settings}
-        onChange={onSettingsChange}
-      />
+      {onSettingsChange ? (
+        <PreviewToolbar settings={settings} onChange={onSettingsChange} />
+      ) : (
+        <h2 id="resume-preview-heading" className="sr-only">Resume preview</h2>
+      )}
       <style media="print">{`@page { size: ${page.cssSize}; margin: ${printMargins}; }`}</style>
       <div className="resume-preview-padding p-3 sm:p-5">
         <div ref={containerRef} className="resume-paper-container mx-auto" style={{ maxWidth: page.width }}>

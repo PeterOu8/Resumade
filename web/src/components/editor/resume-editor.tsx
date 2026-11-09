@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 
 import { deleteResume } from '@/lib/resume/delete-resume';
 import { saveResume } from '@/lib/resume/save-resume';
-import type { ResumeContent, ResumeDraft } from '@/lib/resume/resume.schema';
-import { saveResumeRequestSchema } from '@/lib/resume/resume.schema';
-import type { ResumePresentation } from '@/features/resume-document/document.schema';
+import { saveResumeRequestSchema, type ResumeContent, type ResumeDraft } from '@/lib/resume/resume.schema';
+import { createDefaultPresentation, presentationSchema, type ResumePresentation } from '@/features/resume-document/document.schema';
+import type { EditingLease } from '@/features/resume-document/editing-lease';
 import { ImportPdfDialog } from '@/components/start/import-pdf-dialog';
 import { AiTailorDialog } from './ai-tailor-dialog';
 import { toast } from '@/components/ui/toast';
@@ -32,6 +32,7 @@ import { RichTextEditor } from './rich-text-editor';
 import { SortableList } from './sortable-list';
 import { usePreviewDivider } from './use-preview-divider';
 import { useResumeDocument } from './use-resume-document';
+import { useResumeEditingLock, type ResumeEditingStatus } from './use-resume-editing-lock';
 import { useAiTailorResult } from './use-ai-tailor-result';
 import { usePdfDownload } from './use-pdf-download';
 
@@ -50,18 +51,7 @@ const profileFields = [
   type?: string;
 }>;
 
-export function ResumeEditor({
-  initialStyle,
-  initialImportId,
-  initialDraft,
-  initialPresentation,
-  savedUpdatedAt,
-  draftScope,
-  fallbackDraftScope,
-  resumeId,
-  aiResultScope,
-  canSaveToAccount = false,
-}: {
+type ResumeEditorProps = {
   initialStyle?: PreviewSettings['style'];
   initialImportId?: string;
   initialDraft?: ResumeDraft;
@@ -72,7 +62,48 @@ export function ResumeEditor({
   resumeId?: string;
   aiResultScope: string;
   canSaveToAccount?: boolean;
+};
+
+export function ResumeEditor(props: ResumeEditorProps) {
+  // Keep the guest workspace protected during its sign-in handoff as well.
+  const scope = props.resumeId ? `account.${props.resumeId}` : props.fallbackDraftScope ?? props.draftScope ?? 'guest.default';
+  const { state, retry } = useResumeEditingLock(scope, props.resumeId);
+  const editing = state.status === 'editing' ? state : undefined;
+  const latest = editing?.latest;
+  return (
+    <ResumeEditorWorkspace
+      key={editing?.lease.id ?? 'read-only'}
+      {...props}
+      initialDraft={latest ? { title: latest.title, content: latest.content } : props.initialDraft}
+      initialPresentation={latest ? presentationSchema.catch(createDefaultPresentation()).parse(latest.presentation) : props.initialPresentation}
+      savedUpdatedAt={latest?.updatedAt ?? props.savedUpdatedAt}
+      lease={editing?.lease}
+      lockStatus={state.status}
+      onEnableEditing={retry}
+    />
+  );
+}
+
+function ResumeEditorWorkspace({
+  initialStyle,
+  initialImportId,
+  initialDraft,
+  initialPresentation,
+  savedUpdatedAt,
+  draftScope,
+  fallbackDraftScope,
+  resumeId,
+  aiResultScope,
+  canSaveToAccount = false,
+  lease,
+  lockStatus,
+  onEnableEditing,
+}: ResumeEditorProps & {
+  lease?: EditingLease;
+  lockStatus: ResumeEditingStatus;
+  onEnableEditing: () => void;
 }) {
+  const readOnly = !lease;
   const router = useRouter();
   const document = useResumeDocument({
     initialStyle,
@@ -83,6 +114,7 @@ export function ResumeEditor({
     fallbackDraftScope,
     cloudDocument: Boolean(resumeId),
     signedIn: canSaveToAccount,
+    lease,
   });
   const aiTailor = useAiTailorResult(aiResultScope);
   const [importOpen, setImportOpen] = useState(false);
@@ -135,9 +167,11 @@ export function ResumeEditor({
   }
 
   async function saveToAccount() {
-    if (!canSaveToAccount || saveInFlight.current || deleting) return;
+    if (!canSaveToAccount || saveInFlight.current || deleting || !lease?.isActive()) return;
     const prepared = prepareDraftForSave();
     if (!prepared) return;
+    const finishMutation = lease.beginMutation();
+    if (!finishMutation) return;
     saveInFlight.current = true;
     setSaving(true);
     let openingSavedResume = false;
@@ -163,7 +197,7 @@ export function ResumeEditor({
         if (result.id && result.id !== savedResumeId) {
           aiTailor.moveToScope(result.id);
           setSavedResumeId(result.id);
-          if (!savedResumeId) {
+          if (!savedResumeId && lease.isActive()) {
             router.replace(`/editor?resume=${result.id}`);
             openingSavedResume = true;
           }
@@ -177,6 +211,7 @@ export function ResumeEditor({
         type: 'error',
       });
     } finally {
+      finishMutation();
       if (!openingSavedResume) {
         saveInFlight.current = false;
         setSaving(false);
@@ -186,7 +221,7 @@ export function ResumeEditor({
 
   const finishPendingSave = useEffectEvent(() => {
     const url = new URL(window.location.href);
-    if (!canSaveToAccount || !document.ready || document.recovery || resumedSave.current ||
+    if (!lease?.isActive() || !canSaveToAccount || !document.ready || document.recovery || resumedSave.current ||
         url.searchParams.get('saveAfterSignIn') !== '1') return;
     resumedSave.current = true;
     url.searchParams.delete('saveAfterSignIn');
@@ -199,6 +234,7 @@ export function ResumeEditor({
   }, [canSaveToAccount, document.ready, document.recovery]);
 
   function requestSave() {
+    if (!lease?.isActive()) return;
     if (canSaveToAccount) { void saveToAccount(); return; }
     if (!prepareDraftForSave()) return;
     if (!document.persistDraft()) return;
@@ -215,6 +251,8 @@ export function ResumeEditor({
 
   async function deleteFromAccount() {
     if (!savedResumeId || busy) return;
+    const finishMutation = lease?.beginMutation();
+    if (!finishMutation) return;
 
     setDeleting(true);
     setDeleteError('');
@@ -228,10 +266,11 @@ export function ResumeEditor({
       aiTailor.clearResult();
       setDeleteOpen(false);
       toast.add({ title: 'Resume deleted', type: 'success' });
-      router.replace('/dashboard');
+      if (lease?.isActive()) router.replace('/dashboard');
     } catch {
       setDeleteError('Could not delete this resume. Try again in a moment.');
     } finally {
+      finishMutation();
       setDeleting(false);
     }
   }
@@ -351,6 +390,8 @@ export function ResumeEditor({
             onClick={document.recoverBackup}>Recover local edits</button>
         </div>}
         <EditorToolbar
+          lockStatus={lockStatus}
+          onEnableEditing={onEnableEditing}
           canUndo={document.canUndo}
           canRedo={document.canRedo}
           onUndo={document.undo}
@@ -377,7 +418,7 @@ export function ResumeEditor({
           downloadState={pdfDownload.state}
           onDownload={() => void handleDownload()}
         />
-        <div className="mt-2 grid grid-cols-2 rounded-lg border border-border bg-surface p-1 lg:hidden" aria-label="Editor view">
+        {!readOnly && <div className="mt-2 grid grid-cols-2 rounded-lg border border-border bg-surface p-1 lg:hidden" aria-label="Editor view">
           {(['edit', 'preview'] as const).map((view) => (
             <button
               key={view}
@@ -389,10 +430,10 @@ export function ResumeEditor({
               {view}
             </button>
           ))}
-        </div>
+        </div>}
       </div>
       <Panel
-        inert={busy}
+        inert={busy || readOnly}
         className={`resume-editor-form scroll-area min-h-0 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 ${mobileView === 'edit' ? '' : 'max-lg:hidden'}`}
       >
         <div key={document.generation} className="space-y-6">
@@ -452,8 +493,8 @@ export function ResumeEditor({
         resume={content}
         sectionOrder={sectionOrder}
         settings={document.settings}
-        onSettingsChange={document.updateSettings}
-        visibleOnMobile={mobileView === 'preview'}
+        onSettingsChange={readOnly || busy ? undefined : document.updateSettings}
+        visibleOnMobile={readOnly || mobileView === 'preview'}
       />
       <ImportPdfDialog
         open={importOpen}
@@ -470,8 +511,8 @@ export function ResumeEditor({
         initialView={tailorView}
         result={aiTailor.result}
         onClose={() => setTailorOpen(false)}
-        onResult={aiTailor.setResult}
-        onSelectionChange={aiTailor.setSelectedChangeIds}
+        onResult={(result) => { if (lease?.isActive()) aiTailor.setResult(result); }}
+        onSelectionChange={(ids) => { if (lease?.isActive()) aiTailor.setSelectedChangeIds(ids); }}
         onApply={(tailoredContent, outcome) => {
           if (outcome.applied > 0) {
             document.importDraft({ ...draft, content: tailoredContent }, 'Apply AI tailoring');

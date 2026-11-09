@@ -47,7 +47,7 @@ it('reserves two real snapshots and refuses a third without deleting existing wo
 });
 
 it('serialises simultaneous creation attempts across tabs', async () => {
-  expect(await Promise.all(ids.map(reserveGuestDraft))).toEqual([true, true, false]);
+  expect(await Promise.all(ids.map((id) => reserveGuestDraft(id)))).toEqual([true, true, false]);
   expect(readGuestDrafts()).toHaveLength(2);
 });
 
