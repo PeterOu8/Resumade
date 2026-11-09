@@ -13,8 +13,8 @@ export const previewSections = [
   { title: 'Profile', note: 'The essentials', expanded: false },
   { title: 'Summary', note: 'A stronger introduction', expanded: true },
   { title: 'Experience', note: '2 entries', expanded: false },
-  { title: 'Projects', note: '3 entries', expanded: false },
-  { title: 'Education', note: '1 entry', expanded: false },
+  { title: 'Projects', note: '1 entry', expanded: false },
+  { title: 'Education', note: '0', expanded: false },
 ] as const;
 
 export type LandingFeature = {

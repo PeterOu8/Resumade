@@ -95,7 +95,7 @@ export function EditorIllustration() {
             <PaperSectionTitle>EXPERIENCE</PaperSectionTitle>
             <div className="flex justify-between gap-1.75 text-[9px] max-[520px]:block">
               <strong>Senior Software Engineer</strong>
-              <span className="whitespace-nowrap">2022 — Present</span>
+              <span className="whitespace-nowrap">2024 — Present</span>
             </div>
             <p>JobsAT Studio · Sydney</p>
             <ul className="mt-1 list-[square] space-y-0.75 pl-3">
@@ -116,7 +116,7 @@ export function EditorIllustration() {
             <br />
             <div className="flex justify-between gap-[7px] text-[9px] max-[520px]:block">
               <strong>Graduate Software Engineer</strong>
-              <span className="whitespace-nowrap">2022 — Present</span>
+              <span className="whitespace-nowrap">2022 — 2024</span>
             </div>
             <p>John Smith Ad Agency · Sydney</p>
             <ul className="mt-1 list-[square] space-y-0.75 pl-3">
