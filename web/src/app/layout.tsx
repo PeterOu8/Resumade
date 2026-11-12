@@ -29,7 +29,6 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <Analytics />
       <body className="min-h-full flex flex-col font-sans antialiased">
         <ThemeProvider
           attribute="class"
@@ -43,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
             <Toaster />
           </AiSettingsProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
